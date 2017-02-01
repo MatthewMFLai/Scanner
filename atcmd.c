@@ -2,6 +2,7 @@
 #include <string.h>
 #include "atcmd.h"
 #include "app_uart.h"
+#include "pstore.h"
 #include "SEGGER_RTT.h"
 
 #define n_array (sizeof (m_atcmds) / sizeof (const char *))
@@ -26,6 +27,8 @@ static const char * m_atcmds[] = {
 	"at$scan?",
 	"at$mode?",
 	"at$scanint?",
+	"at$psget",
+	"at$psset",
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
@@ -209,6 +212,8 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 		case APP_ATCMD_ACT_ENABLE_SCAN_READ :
 		case APP_ATCMD_ACT_MODE_0_READ :
 		case APP_ATCMD_ACT_SCAN_INT_READ :
+		case APP_ATCMD_TST_PSTORE_GET :
+		case APP_ATCMD_TST_PSTORE_SET :
 			break;
 			
 		default :
@@ -220,6 +225,9 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 static uint8_t atcmd_run_cmd()
 {	
 	uint8_t rc = APP_ATCMD_NOT_SUPPORTED;
+	char config_data_src[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789??";
+	uint8_t config_data_dest[512] = {0};
+	uint16_t config_size = 0;
 	
 	switch (atcmd_match_cmd()) {
 		case APP_ATCMD_ACT_ENABLE_SCAN :
@@ -244,6 +252,18 @@ static uint8_t atcmd_run_cmd()
 			
 		case APP_ATCMD_ACT_SCAN_INT_READ :
 			rc = APP_ATCMD_ACT_SCAN_INT_READ;
+			break;
+
+		case APP_ATCMD_TST_PSTORE_GET :
+			config_size = pstore_get(config_data_dest);
+			SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", config_size, config_data_dest);
+			rc = APP_ATCMD_TST_PSTORE_GET;
+			break;
+			
+		case APP_ATCMD_TST_PSTORE_SET :
+			SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen(config_data_src), config_data_src);
+			pstore_set((uint8_t *)config_data_src, strlen(config_data_src));
+			rc = APP_ATCMD_TST_PSTORE_SET;
 			break;
 			
 		default :

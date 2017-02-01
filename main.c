@@ -19,10 +19,12 @@
 #include "softdevice_handler.h"
 #include "ble_advdata.h"
 #include "ble_nus_c.h"
+#include "pstorage.h"
 #include "SEGGER_RTT.h"
 
 #include "secure_scan.h"
 #include "atcmd.h"
+#include "pstore.h"
 
 #define CENTRAL_LINK_COUNT      1                               /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 #define PERIPHERAL_LINK_COUNT   0                               /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
@@ -219,8 +221,7 @@ void uart_event_handle(app_uart_evt_t * p_event)
             UNUSED_VARIABLE(app_uart_get(&data_array[index]));
             index++;
 
-            if ((data_array[index - 1] == '\n') ||
-				(data_array[index - 1] == '\r') ||
+            if ((data_array[index - 1] == '\r') ||
 				(index >= (BLE_NUS_MAX_DATA_LEN)))
             {
                 /*while (ble_nus_c_string_send(&m_ble_nus_c, data_array, index) != NRF_SUCCESS)
@@ -260,6 +261,12 @@ void uart_event_handle(app_uart_evt_t * p_event)
 					case APP_ATCMD_ACT_SCAN_INT_READ :
 						atcmd_reply_scanint();
 						break;
+
+					case APP_ATCMD_TST_PSTORE_GET :
+					case APP_ATCMD_TST_PSTORE_SET :
+						atcmd_reply_ok();
+						break;
+						
 					default :
 						atcmd_reply_nack();
 						break;
@@ -600,6 +607,19 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
     ble_nus_c_on_ble_evt(&m_ble_nus_c,p_ble_evt);
 }
 
+/**@brief Function for dispatching a system event to interested modules.
+ *
+ * @details This function is called from the System event interrupt handler after a system
+ *          event has been received.
+ *
+ * @param[in] sys_evt  System stack event.
+ */
+static void sys_evt_dispatch(uint32_t sys_evt)
+{
+    pstorage_sys_event_handler(sys_evt);
+    //ble_advertising_on_sys_evt(sys_evt);
+}
+
 /**@brief Function for initializing the BLE stack.
  *
  * @details Initializes the SoftDevice and the BLE event interrupt.
@@ -628,6 +648,10 @@ static void ble_stack_init(void)
 
     // Register with the SoftDevice handler module for BLE events.
     err_code = softdevice_ble_evt_handler_set(ble_evt_dispatch);
+    APP_ERROR_CHECK(err_code);
+	
+    // Register with the SoftDevice handler module for BLE events.
+    err_code = softdevice_sys_evt_handler_set(sys_evt_dispatch);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -794,6 +818,7 @@ int main(void)
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
 	
+	pstore_init();
     for (;;)
     {
         power_manage();
