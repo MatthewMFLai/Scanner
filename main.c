@@ -208,7 +208,8 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
  */
 void uart_event_handle(app_uart_evt_t * p_event)
 {
-    static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
+    //static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
+	static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
     static uint8_t index = 0;
 
 	uint16_t new_scan_interval;
@@ -222,7 +223,8 @@ void uart_event_handle(app_uart_evt_t * p_event)
             index++;
 
             if ((data_array[index - 1] == '\r') ||
-				(index >= (BLE_NUS_MAX_DATA_LEN)))
+				(index >= (APP_ATCMD_MAX_DATA_LEN)))
+				//(index >= (BLE_NUS_MAX_DATA_LEN)))
             {
                 /*while (ble_nus_c_string_send(&m_ble_nus_c, data_array, index) != NRF_SUCCESS)
                 {
@@ -263,7 +265,7 @@ void uart_event_handle(app_uart_evt_t * p_event)
 						break;
 
 					case APP_ATCMD_TST_PSTORE_GET :
-					case APP_ATCMD_TST_PSTORE_SET :
+					case APP_ATCMD_ACT_CONFIG_SET :
 						atcmd_reply_ok();
 						break;
 						

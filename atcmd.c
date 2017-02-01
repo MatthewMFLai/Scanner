@@ -10,13 +10,14 @@
 static char m_atcmd_cur[APP_ATCMD_LENGTH];
 static char m_atcmd_param[APP_ATCMD_PARA_MAX][APP_ATCMD_PARA_LENGTH];
 static char m_space = ' ';
-static char m_lf = '\n';
 static char m_cr = '\r';
 static char m_ok_str[] ="OK";
 static char m_nack_str[] ="NACK";
 static char m_in_str[] ="IN";
 static char m_out_str[] ="OUT";
 static char m_def_building_code[] = "BUL001";
+
+static char m_configdata[PSTORE_MAX_BLOCK];
 
 static atcmd_data_t m_scanner;
 
@@ -28,15 +29,17 @@ static const char * m_atcmds[] = {
 	"at$mode?",
 	"at$scanint?",
 	"at$psget",
-	"at$psset",
+	"at$cfgset",
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
 static atcmd_param_desc_t m_mode[] = {{0, 1}};  // working mode
 static atcmd_param_desc_t m_scanint[] = {{0, 2},   // scan interval
 										 {0, 2}};  // scan window
-
-
+static atcmd_param_desc_t m_configdat[] = {{1, 0},   // version string
+										   {0, 2},  // config data size
+										   {1, 0}};   // config data, no white space support
+										   
 static bool check_ascii_word (uint8_t *p_data, uint8_t len)
 {
 	uint8_t i;
@@ -89,7 +92,6 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 	uint16_t scan_interval;
 	uint16_t scan_window;
 	while (*(p_data + i) != m_space &&
-		*(p_data + i) != m_lf &&
 		*(p_data + i) != m_cr &&
 		i < buffer_len)
 		i++;
@@ -150,8 +152,7 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 
 			j = i;
 			while (*(p_data + j) != m_space &&
-			       *(p_data + j) != m_cr &&
-				   *(p_data + j) != m_lf)
+			       *(p_data + j) != m_cr)
 				j++;			
 
 			if (j == buffer_len)
@@ -180,8 +181,7 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 
 			j = i;
 			while (*(p_data + j) != m_space &&
-			       *(p_data + j) != m_cr &&
-				   *(p_data + j) != m_lf)
+			       *(p_data + j) != m_cr)
 				j++;			
 
 			if (j == buffer_len)
@@ -213,7 +213,90 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 		case APP_ATCMD_ACT_MODE_0_READ :
 		case APP_ATCMD_ACT_SCAN_INT_READ :
 		case APP_ATCMD_TST_PSTORE_GET :
-		case APP_ATCMD_TST_PSTORE_SET :
+			break;
+			
+		case APP_ATCMD_ACT_CONFIG_SET :
+			// Get the next parameter, the version string
+			while (*(p_data + i) == m_space &&
+			       i < buffer_len)
+				i++;
+				
+			if (i == buffer_len)
+				return false;
+
+			j = i;
+			while (*(p_data + j) != m_space &&
+			       *(p_data + j) != m_cr
+				   )
+				j++;			
+
+			if (j == buffer_len)
+				return false;
+
+			if (m_configdat[0].is_str)
+			{
+				memcpy(m_scanner.version_str, p_data + i, j - i);
+			}
+			
+			// Get the next parameter, the 2-byte config data size
+			i = j;
+			while (*(p_data + i) == m_space &&
+			       i < buffer_len)
+				i++;
+				
+			if (i == buffer_len)
+				return false;
+
+			j = i;
+			while (*(p_data + j) != m_space &&
+			       *(p_data + j) != m_cr)
+				j++;			
+
+			if (j == buffer_len)
+				return false;
+
+			memcpy(worddata, p_data + i, j - i);
+			if (!check_ascii_word(worddata, j - i))
+				return false;
+			
+			if (!m_configdat[1].is_str)
+			{
+				memcpy(m_scanner.config_size_str, worddata, j - i);
+				m_scanner.config_size_str[j-i] = '\0';
+				// Convert ascii to data.
+				scan_window = ascii_to_word(worddata, j - i);
+			}
+			
+			if (scan_window)
+			{
+				m_scanner.config_size = scan_window;
+			}
+			else
+				return false;
+
+			// Get the next parameter, the config data content
+			i = j;
+			while (*(p_data + i) == m_space &&
+			       i < buffer_len)
+				i++;
+				
+			if (i == buffer_len)
+				return false;
+
+			j = i;
+			while (*(p_data + j) != m_space &&
+			       *(p_data + j) != m_cr
+				   )
+				j++;			
+
+			if (j == buffer_len)
+				return false;
+
+			if (m_configdat[2].is_str)
+			{
+				memcpy(m_configdata, p_data + i, j - i);
+			}			
+			
 			break;
 			
 		default :
@@ -225,8 +308,8 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 static uint8_t atcmd_run_cmd()
 {	
 	uint8_t rc = APP_ATCMD_NOT_SUPPORTED;
-	char config_data_src[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789??";
-	uint8_t config_data_dest[512] = {0};
+	char config_data_src[PSTORE_MAX_BLOCK];
+	uint8_t config_data_dest[PSTORE_MAX_BLOCK] = {0};
 	uint16_t config_size = 0;
 	
 	switch (atcmd_match_cmd()) {
@@ -260,10 +343,12 @@ static uint8_t atcmd_run_cmd()
 			rc = APP_ATCMD_TST_PSTORE_GET;
 			break;
 			
-		case APP_ATCMD_TST_PSTORE_SET :
+		case APP_ATCMD_ACT_CONFIG_SET :
+			memcpy(config_data_src, m_configdata, m_scanner.config_size);
+			config_data_src[m_scanner.config_size] = 0;
 			SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen(config_data_src), config_data_src);
-			pstore_set((uint8_t *)config_data_src, strlen(config_data_src));
-			rc = APP_ATCMD_TST_PSTORE_SET;
+			pstore_set((uint8_t *)m_configdata, m_scanner.config_size);
+			rc = APP_ATCMD_ACT_CONFIG_SET;
 			break;
 			
 		default :
@@ -285,6 +370,10 @@ void atcmd_init(void)
 	m_scanner.enable = 1;
 	m_scanner.enable_byte = '0';
 	strcpy(m_scanner.building_code, m_def_building_code);
+	m_scanner.config_size = 0;
+	memset(m_configdata, 0, PSTORE_MAX_BLOCK);
+	memset(m_scanner.version_str, 0, APP_VERSION_STR_MAX);
+	memset(m_scanner.config_size_str, 0, APP_WORD_STR_LEN);
 }
 
 /**@brief Function to store the current at command in the at command table.

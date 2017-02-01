@@ -13,11 +13,13 @@
 #define APP_ATCMD_ACT_MODE_0_READ       4
 #define APP_ATCMD_ACT_SCAN_INT_READ     5
 #define APP_ATCMD_TST_PSTORE_GET        6
-#define APP_ATCMD_TST_PSTORE_SET        7
+#define APP_ATCMD_ACT_CONFIG_SET        7
 #define APP_ATCMD_NOT_SUPPORTED     0xff
 
 #define APP_BUILDING_CODE_LENGTH	0X10
 #define APP_WORD_STR_LEN			6  // 5 characters + the \0
+#define APP_VERSION_STR_MAX         32
+#define APP_ATCMD_MAX_DATA_LEN      600
 
 typedef struct
 {
@@ -30,6 +32,9 @@ typedef struct
 	uint16_t 	scan_window;
 	uint8_t		mode;
 	uint8_t		enable;
+	char        version_str[APP_VERSION_STR_MAX];
+	uint16_t    config_size;
+	char		config_size_str[APP_WORD_STR_LEN];
 } atcmd_data_t;
 
 typedef struct
