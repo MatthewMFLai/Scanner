@@ -1,0 +1,82 @@
+# Config file version number
+vers=v1.0.1
+
+# Scanner config parameters
+
+# scanner enable (1) or disable (0)
+sc01=0
+
+# scanner working mode
+sc02=0
+
+# scanner interval
+sc03=160
+
+# scanner window
+sc04=80
+
+# Beacon config parameters
+
+# beacon 1 related parameters
+# 6-byte device id
+b101=d2b547436202
+# 16-byte UUID
+b102=0112233445566778899aabbccddeeff0
+# enable scan (1) or disable scan (0)
+b103=1
+# encryption suppport (1) or no encryption (0)
+b104=1
+# encryption key
+b105=3112233445566778899aabbccddeeff1
+# advertise interval
+b106=80
+# Transmit power (dBm)
+b107=0 
+
+# beacon 2 related parameters
+# 6-byte device id
+b201=c68b7d3723fe
+# 16-byte UUID
+b202=0112233445566778899aabbccddeeff1
+# enable scan (1) or disable scan (0)
+b203=1
+# encryption suppport (1) or no encryption (0)
+b204=1
+# encryption key
+b205=f112233445566778899aabbccddeef31
+# advertise interval
+b206=80
+# Transmit power (dBm)
+b207=0 
+
+# beacon 3 related parameters
+# 6-byte device id
+b301=f3e30a6e5dd6
+# 16-byte UUID
+b302=00000000000000000000000000000000
+# enable scan (1) or disable scan (0)
+b303=1
+# encryption suppport (1) or no encryption (0)
+b304=0
+# encryption key
+b305=00000000000000000000000000000000
+# advertise interval
+b306=80
+# Transmit power (dBm)
+b307=0 
+
+# beacon 4 related parameters
+# 6-byte device id
+b401=faee97afd35a
+# 16-byte UUID
+b402=00000000000000000000000000000000
+# enable scan (1) or disable scan (0)
+b403=1
+# encryption suppport (1) or no encryption (0)
+b404=0
+# encryption key
+b405=00000000000000000000000000000000
+# advertise interval
+b406=80
+# Transmit power (dBm)
+b407=0
