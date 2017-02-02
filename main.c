@@ -209,8 +209,8 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
 void uart_event_handle(app_uart_evt_t * p_event)
 {
     //static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
-	static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
-    static uint8_t index = 0;
+	static uint8_t data_array[APP_ATCMD_MAX_DATA_LEN];
+    static uint16_t index = 0;
 
 	uint16_t new_scan_interval;
 	uint16_t new_scan_window;
@@ -264,9 +264,16 @@ void uart_event_handle(app_uart_evt_t * p_event)
 						atcmd_reply_scanint();
 						break;
 
-					case APP_ATCMD_TST_PSTORE_GET :
+					case APP_ATCMD_ACT_CONFIG_GET :
+						atcmd_reply_ok();
+						break;
+						
 					case APP_ATCMD_ACT_CONFIG_SET :
 						atcmd_reply_ok();
+						break;
+						
+					case APP_ATCMD_ACT_CONFIG_GET_VER :
+						atcmd_reply_config_ver();
 						break;
 						
 					default :

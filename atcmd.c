@@ -16,6 +16,7 @@ static char m_nack_str[] ="NACK";
 static char m_in_str[] ="IN";
 static char m_out_str[] ="OUT";
 static char m_def_building_code[] = "BUL001";
+static char m_null[] = "NUL";
 
 static char m_configdata[PSTORE_MAX_BLOCK];
 
@@ -28,8 +29,9 @@ static const char * m_atcmds[] = {
 	"at$scan?",
 	"at$mode?",
 	"at$scanint?",
-	"at$psget",
+	"at$cfgget?",
 	"at$cfgset",
+	"at$cfggetv?"
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
@@ -83,12 +85,12 @@ static uint8_t atcmd_match_cmd()
  * 
  * @param[in] p_data  pointer to the first byte in the raw data buffer.
  */
-static bool atcmd_extract_cmd(char buffer_len, char *p_data)
+static bool atcmd_extract_cmd(uint16_t buffer_len, char *p_data)
 {
 	uint8_t bytedata;
 	uint8_t worddata[5] = {0};
-	uint8_t i = 0;
-	uint8_t j = 0;
+	uint16_t i = 0;
+	uint16_t j = 0;
 	uint16_t scan_interval;
 	uint16_t scan_window;
 	while (*(p_data + i) != m_space &&
@@ -212,7 +214,8 @@ static bool atcmd_extract_cmd(char buffer_len, char *p_data)
 		case APP_ATCMD_ACT_ENABLE_SCAN_READ :
 		case APP_ATCMD_ACT_MODE_0_READ :
 		case APP_ATCMD_ACT_SCAN_INT_READ :
-		case APP_ATCMD_TST_PSTORE_GET :
+		case APP_ATCMD_ACT_CONFIG_GET :
+		case APP_ATCMD_ACT_CONFIG_GET_VER :
 			break;
 			
 		case APP_ATCMD_ACT_CONFIG_SET :
@@ -309,8 +312,6 @@ static uint8_t atcmd_run_cmd()
 {	
 	uint8_t rc = APP_ATCMD_NOT_SUPPORTED;
 	char config_data_src[PSTORE_MAX_BLOCK];
-	uint8_t config_data_dest[PSTORE_MAX_BLOCK] = {0};
-	uint16_t config_size = 0;
 	
 	switch (atcmd_match_cmd()) {
 		case APP_ATCMD_ACT_ENABLE_SCAN :
@@ -337,18 +338,20 @@ static uint8_t atcmd_run_cmd()
 			rc = APP_ATCMD_ACT_SCAN_INT_READ;
 			break;
 
-		case APP_ATCMD_TST_PSTORE_GET :
-			config_size = pstore_get(config_data_dest);
-			SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", config_size, config_data_dest);
-			rc = APP_ATCMD_TST_PSTORE_GET;
+		case APP_ATCMD_ACT_CONFIG_GET :
+			rc = APP_ATCMD_ACT_CONFIG_GET;
 			break;
 			
 		case APP_ATCMD_ACT_CONFIG_SET :
 			memcpy(config_data_src, m_configdata, m_scanner.config_size);
 			config_data_src[m_scanner.config_size] = 0;
-			SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen(config_data_src), config_data_src);
+			//SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen(config_data_src), config_data_src);
 			pstore_set((uint8_t *)m_configdata, m_scanner.config_size);
 			rc = APP_ATCMD_ACT_CONFIG_SET;
+			break;
+
+		case APP_ATCMD_ACT_CONFIG_GET_VER :
+			rc = APP_ATCMD_ACT_CONFIG_GET_VER;
 			break;
 			
 		default :
@@ -382,7 +385,7 @@ void atcmd_init(void)
  * @param[in] p_data  pointer to the at command in the raw data buffer.
  * @param[in] cmd_len  size, in bytes, of the current at command.
  */
-uint8_t atcmd_parse(char buffer_len, char *p_data)
+uint8_t atcmd_parse(uint16_t buffer_len, char *p_data)
 {
 	if (atcmd_extract_cmd(buffer_len, p_data))
 		return (atcmd_run_cmd());
@@ -423,6 +426,63 @@ void atcmd_reply_scanint(void)
 	for (uint8_t i = 0; i < strlen(m_scanner.scan_window_str); i++)
 	{
 		while(app_uart_put(m_scanner.scan_window_str[i]) != NRF_SUCCESS);
+	}
+	while(app_uart_put('\n') != NRF_SUCCESS);
+}
+
+/**@brief Function to store the current at command in the at command table.
+ * @details Use the built-in h/w encryption engine.
+ * 
+ * @param[in] p_data  pointer to the at command in the raw data buffer.
+ * @param[in] cmd_len  size, in bytes, of the current at command.
+ *
+ * @Warning This routine may cause the watchdog timer to reset if the config data
+ *          is more than 128 bytes. For a huge config data use the scheduler to
+ *          send the data instead.
+ */
+void atcmd_reply_config(void)
+{
+	uint8_t config_data_dest[PSTORE_MAX_BLOCK] = {0};
+	uint16_t config_size;
+	
+	config_size = pstore_get(config_data_dest);
+	config_data_dest[config_size] = 0x00;
+	//SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen((char *)config_data_dest), config_data_dest);
+	for (uint16_t i = 0; i < config_size; i++)
+	{
+		while(app_uart_put(config_data_dest[i]) != NRF_SUCCESS);
+	}
+}
+
+/**@brief Function to store the current at command in the at command table.
+ * @details Use the built-in h/w encryption engine.
+ * 
+ * @param[in] p_data  pointer to the at command in the raw data buffer.
+ * @param[in] cmd_len  size, in bytes, of the current at command.
+ *
+ * @Warning This routine may cause the watchdog timer to reset if the config data
+ *          is more than 128 bytes. For a huge config data use the scheduler to
+ *          send the data instead.
+ */
+void atcmd_reply_config_ver(void)
+{
+	uint16_t len = strlen(m_scanner.version_str);
+	uint16_t i;
+	
+	if (len)
+	{
+		for (i = 0; i < len; i++)
+		{
+			while(app_uart_put(m_scanner.version_str[i]) != NRF_SUCCESS);
+		}
+	}
+	else
+	{
+		len = strlen(m_null);
+		for (i = 0; i < len; i++)
+		{
+			while(app_uart_put(m_null[i]) != NRF_SUCCESS);
+		}		
 	}
 	while(app_uart_put('\n') != NRF_SUCCESS);
 }
