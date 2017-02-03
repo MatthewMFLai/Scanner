@@ -7,9 +7,7 @@
 #define CONFIG_VALUE_LEN        32 
 #define CONFIG_LIMITER          0x0A
 #define CONFIG_EQUAL            '='
-#define CONFIG_BYTE_DIGITS_MAX  3
-#define CONFIG_WORD_DIGITS_MAX  5 
-#define CONFIG_LONGWORD_DIGITS_MAX 10 
+ 
 
 typedef struct
 {
@@ -22,6 +20,7 @@ void config_hdlr_init(void);
 
 // Parse the ascii config file supplied by the calling routine.
 void config_hdlr_parse(uint16_t len, uint8_t *p_data);
+bool config_hdlr_get_bcd(char *p_key, uint16_t *p_len, char *p_dest);
 bool config_hdlr_get_string(char *p_key, uint16_t *p_len, char *p_dest);
 bool config_hdlr_get_byte(char *p_key, uint8_t *p_dest);
 bool config_hdlr_get_word(char *p_key, uint16_t *p_dest);

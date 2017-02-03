@@ -22,9 +22,11 @@
 #include "pstorage.h"
 #include "SEGGER_RTT.h"
 
+#include "util.h"
 #include "secure_scan.h"
 #include "atcmd.h"
 #include "pstore.h"
+#include "config_hdlr.h"
 
 #define CENTRAL_LINK_COUNT      1                               /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 #define PERIPHERAL_LINK_COUNT   0                               /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
@@ -54,33 +56,7 @@
 
 #define UUID16_SIZE             2                               /**< Size of 16 bit UUID */
 #define UUID32_SIZE             4                               /**< Size of 32 bit UUID */
-#define UUID128_SIZE            16                              /**< Size of 128 bit UUID */
-
-#define APP_BEACON_UUID                 0x01, 0x12, 0x23, 0x34, \
-                                        0x45, 0x56, 0x67, 0x78, \
-                                        0x89, 0x9a, 0xab, 0xbc, \
-                                        0xcd, 0xde, 0xef, 0xf0            /**< Proprietary UUID for Beacon. */
-#define APP_BEACON_UUID2                0x01, 0x12, 0x23, 0x34, \
-                                        0x45, 0x56, 0x67, 0x78, \
-                                        0x89, 0x9a, 0xab, 0xbc, \
-                                        0xcd, 0xde, 0xef, 0xf1            /**< Proprietary UUID for Beacon. */
-#define APP_BEACON_UUID3                0x01, 0x12, 0x23, 0x34, \
-                                        0x45, 0x56, 0x67, 0x78, \
-                                        0x89, 0x9a, 0xab, 0xbc, \
-                                        0xcd, 0xde, 0xef, 0xf2            /**< Proprietary UUID for Beacon. */
-#define APP_BEACON_UUID4                0x01, 0x12, 0x23, 0x34, \
-                                        0x45, 0x56, 0x67, 0x78, \
-                                        0x89, 0x9a, 0xab, 0xbc, \
-                                        0xcd, 0xde, 0xef, 0xf3            /**< Proprietary UUID for Beacon. */										
-#define APP_AES128_KEY                  0x31, 0x12, 0x23, 0x34, \
-                                        0x45, 0x56, 0x67, 0x78, \
-                                        0x89, 0x9a, 0xab, 0xbc, \
-                                        0xcd, 0xde, 0xef, 0xf1            /**< Proprietary AES128 key. */
-#define APP_AES128_KEY2                 0xf1, 0x12, 0x23, 0x34, \
-                                        0x45, 0x56, 0x67, 0x78, \
-                                        0x89, 0x9a, 0xab, 0xbc, \
-                                        0xcd, 0xde, 0xef, 0x31            /**< Proprietary AES128 key. */
-	
+#define UUID128_SIZE            16                              /**< Size of 128 bit UUID */									
 									
 static ble_nus_c_t              m_ble_nus_c;                    /**< Instance of NUS service. Must be passed to all NUS_C API calls. */
 static ble_db_discovery_t       m_ble_db_discovery;             /**< Instance of database discovery module. Must be passed to all db_discovert API calls */
@@ -99,14 +75,11 @@ static const ble_gap_conn_params_t m_connection_param =
 /**
  * @brief Parameters used when scanning.
  */
+ static ble_gap_addr_t beacon = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0}};
+ static ble_gap_addr_t beacon2 = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0}};
+ static ble_gap_addr_t trackr = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0}};
+ static ble_gap_addr_t trackr2 = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0}};
  
- static ble_gap_addr_t beacon = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0x02, 0x62, 0x43, 0x47, 0xb5, 0xd2}};
- static ble_gap_addr_t beacon2 = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0xfe, 0x23, 0x37, 0x7d, 0x8b, 0xc6}};
- static ble_gap_addr_t trackr = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0xd6, 0x5d, 0x6e, 0x0a, 0xe3, 0xf3}};
- static ble_gap_addr_t trackr2 = {BLE_GAP_ADDR_TYPE_RANDOM_STATIC, {0x5a, 0xd3, 0xaf, 0x97, 0xee, 0xfa}};
-
- //static ble_gap_addr_t *whitelisttable[] = {&beacon, &trackr2};
- //static ble_gap_addr_t *whitelisttable[] = {&beacon2, &trackr};
  static ble_gap_addr_t *whitelisttable[] = {&beacon, &beacon2, &trackr, &trackr2};
  static ble_gap_whitelist_t whitelistcontrol =
  {
@@ -138,20 +111,20 @@ static const ble_uuid_t m_nus_uuid =
 
 static uint8_t m_aes128_key[APP_AES_LENGTH] =
 {
-	APP_AES128_KEY
+	0
 };
 static uint8_t m_beacon_uuid[APP_AES_LENGTH] =
 {
-	APP_BEACON_UUID
+	0
 };
 static uint8_t m_beacon2_uuid[APP_AES_LENGTH] =
 {
-	APP_BEACON_UUID2
+	0
 };
 
 static uint8_t m_aes128_key2[APP_AES_LENGTH] =
 {
-	APP_AES128_KEY2
+	0
 };
 APP_TIMER_DEF(m_app_timer_id);
  
@@ -494,9 +467,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 {
     uint32_t              err_code;
     const ble_gap_evt_t * p_gap_evt = &p_ble_evt->evt.gap_evt;
-	//Matt test
-	static uint32_t s_count = 8;
-	static uint32_t s_last_led_status = BSP_INDICATE_IDLE;
 
 	//Matt test end
 	
@@ -516,29 +486,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 				//err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
 				//APP_ERROR_CHECK(err_code);
 				break;
-				
-				// Matt test
-				if (!s_count)
-				{
-					s_count = 8;
-					if (s_last_led_status == BSP_INDICATE_IDLE)
-					{
-						s_last_led_status = BSP_INDICATE_CONNECTED;
-					}
-					else
-					{
-						s_last_led_status = BSP_INDICATE_IDLE;
-					}
-						
-					err_code = bsp_indication_set(s_last_led_status);
-					APP_ERROR_CHECK(err_code);
-				}
-				else
-				{
-					s_count--;
-				}
-				break;
-				// Matt test end
+
                 err_code = sd_ble_gap_connect(&p_adv_report->peer_addr,
                                               &m_scan_params,
                                               &m_connection_param);
@@ -775,6 +723,9 @@ static void timer_timeout_handler (void *p_context)
 
 int main(void)
 {
+	uint8_t config_data_raw[PSTORE_MAX_BLOCK] = {0};
+	uint16_t config_size;
+	uint16_t param_size;
 	uint32_t err_code;
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, NULL);
 	
@@ -785,17 +736,38 @@ int main(void)
     nus_c_init();
 	
 	// Matt: our code
+	// Get config data from internal flash.
 	sscan_init();
+	config_hdlr_init();
+	pstore_init();
+
+	config_size = pstore_get(config_data_raw);
+	config_hdlr_parse(config_size, config_data_raw);
+
+	// Change to small endian format for the device ids first.
+    if (config_hdlr_get_bcd("b101", &param_size, (char *)beacon.addr))
+		big_to_small_endian(beacon.addr, APP_DEVICE_ID_LENGTH);
+    if (config_hdlr_get_bcd("b201", &param_size, (char *)beacon2.addr))
+		big_to_small_endian(beacon2.addr, APP_DEVICE_ID_LENGTH);
+    if (config_hdlr_get_bcd("b301", &param_size, (char *)trackr.addr))
+		big_to_small_endian(trackr.addr, APP_DEVICE_ID_LENGTH);
+    if (config_hdlr_get_bcd("b401", &param_size, (char *)trackr2.addr))
+		big_to_small_endian(trackr2.addr, APP_DEVICE_ID_LENGTH);
+	
 	sscan_set_device_id(0, beacon.addr);
-	sscan_set_device_uuid(0, m_beacon_uuid);
-	sscan_set_encryption_key(0, m_aes128_key);
+	if (config_hdlr_get_bcd("b102", &param_size, (char *)m_beacon_uuid))
+		sscan_set_device_uuid(0, m_beacon_uuid);
+	if (config_hdlr_get_bcd("b105", &param_size, (char *)m_aes128_key))
+		sscan_set_encryption_key(0, m_aes128_key);
 	sscan_set_timeout_window(0, APP_NO_ADV_GAP_TICKS);
 	sscan_enable_decryption(0);
 	sscan_enable_beacon(0);
 	
 	sscan_set_device_id(1, beacon2.addr);
-	sscan_set_device_uuid(1, m_beacon2_uuid);
-	sscan_set_encryption_key(1, m_aes128_key2);
+	if (config_hdlr_get_bcd("b202", &param_size, (char *)m_beacon2_uuid))
+		sscan_set_device_uuid(1, m_beacon2_uuid);
+	if (config_hdlr_get_bcd("b205", &param_size, (char *)m_aes128_key2))
+		sscan_set_encryption_key(1, m_aes128_key2);
 	sscan_set_timeout_window(1, APP_NO_ADV_GAP_TICKS);
 	sscan_enable_decryption(1);
 	sscan_enable_beacon(1);
@@ -804,14 +776,14 @@ int main(void)
 	sscan_set_device_uuid(2, m_beacon_uuid);
 	sscan_set_encryption_key(2, m_aes128_key);
 	sscan_set_timeout_window(2, APP_NO_ADV_GAP_TICKS);
-	sscan_enable_decryption(2);
+	sscan_disable_decryption(2);
 	sscan_enable_beacon(2);
 	
 	sscan_set_device_id(3, trackr2.addr);
 	sscan_set_device_uuid(3, m_beacon_uuid);
 	sscan_set_encryption_key(3, m_aes128_key);
 	sscan_set_timeout_window(3, APP_NO_ADV_GAP_TICKS);
-	sscan_enable_decryption(3);
+	sscan_disable_decryption(3);
 	sscan_enable_beacon(3);
 	
     //err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_SINGLE_SHOT, timer_timeout_handler);
@@ -822,12 +794,10 @@ int main(void)
     // with devices that advertise NUS UUID.
 	// Activate scan with AT command at$scan from MCU side.
     // scan_start();
-    printf("Scan started\r\n");
 
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
 	
-	pstore_init();
     for (;;)
     {
         power_manage();

@@ -55,6 +55,7 @@ $(abspath ../../../../../../components/drivers_nrf/uart/nrf_drv_uart.c) \
 $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
 $(abspath ../../../../../bsp/bsp.c) \
 $(abspath ../../../../../bsp/bsp_btn_ble.c) \
+$(abspath ../../../util.c) \
 $(abspath ../../../pstore.c) \
 $(abspath ../../../config_hdlr.c) \
 $(abspath ../../../atcmd.c) \
