@@ -31,7 +31,8 @@ static const char * m_atcmds[] = {
 	"at$scanint?",
 	"at$cfgget?",
 	"at$cfgset",
-	"at$cfggetv?"
+	"at$cfggetv?",
+	"at$cfgupd"
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
@@ -302,6 +303,9 @@ static bool atcmd_extract_cmd(uint16_t buffer_len, char *p_data)
 			
 			break;
 			
+		case APP_ATCMD_ACT_CONFIG_UPD :
+			break;
+			
 		default :
 			break;
 	}
@@ -311,7 +315,6 @@ static bool atcmd_extract_cmd(uint16_t buffer_len, char *p_data)
 static uint8_t atcmd_run_cmd()
 {	
 	uint8_t rc = APP_ATCMD_NOT_SUPPORTED;
-	char config_data_src[PSTORE_MAX_BLOCK];
 	
 	switch (atcmd_match_cmd()) {
 		case APP_ATCMD_ACT_ENABLE_SCAN :
@@ -343,15 +346,16 @@ static uint8_t atcmd_run_cmd()
 			break;
 			
 		case APP_ATCMD_ACT_CONFIG_SET :
-			memcpy(config_data_src, m_configdata, m_scanner.config_size);
-			config_data_src[m_scanner.config_size] = 0;
-			//SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen(config_data_src), config_data_src);
 			pstore_set((uint8_t *)m_configdata, m_scanner.config_size);
 			rc = APP_ATCMD_ACT_CONFIG_SET;
 			break;
 
 		case APP_ATCMD_ACT_CONFIG_GET_VER :
 			rc = APP_ATCMD_ACT_CONFIG_GET_VER;
+			break;
+			
+		case APP_ATCMD_ACT_CONFIG_UPD :
+			rc = APP_ATCMD_ACT_CONFIG_UPD;
 			break;
 			
 		default :

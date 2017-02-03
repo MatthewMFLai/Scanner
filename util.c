@@ -34,48 +34,106 @@ uint8_t byte_to_ascii (uint8_t *p_dest, uint8_t value)
 {
     uint8_t quotient;
     uint8_t rc = 0;
-
-    for (uint8_t i = 0, divisor = 100; i < CONFIG_BYTE_DIGITS_MAX; i++)
+	uint8_t divisor = DIVISOR_BYTE;
+	bool check_leading_zero = true;
+	
+	if (!value)
+	{
+		*p_dest = ZERO;
+		return (1);
+	}
+	
+    for (uint8_t i = 0; i < CONFIG_BYTE_DIGITS_MAX; i++)
     {
 		quotient = value / divisor;
 		value = value % divisor;
-		*p_dest++ = quotient + 0x30;
-		rc++;
-		divisor = divisor / 10;
+		if (check_leading_zero)
+		{
+			if (quotient)
+			{
+				*p_dest++ = quotient + ZERO;
+				rc++;
+				check_leading_zero = false;
+			}
+		}
+		else
+		{
+			*p_dest++ = quotient + ZERO;
+			rc++;
+		}			
+		divisor = divisor / DIVISOR;
     }
     return (rc);
 }
 
 uint8_t word_to_ascii (uint8_t *p_dest, uint16_t value)
 {
-    uint16_t divisor = 10000;
+    uint16_t divisor = DIVISOR_WORD;
     uint8_t quotient;
     uint8_t rc = 0;
-
+	bool check_leading_zero = true;
+	
+	if (!value)
+	{
+		*p_dest = ZERO;
+		return (1);
+	}
+	
     for (uint8_t i = 0; i < CONFIG_WORD_DIGITS_MAX; i++)
     {
 		quotient = value / divisor;
 		value = value % divisor;
-		*p_dest++ = quotient + 0x30;
-		rc++;
-		divisor = divisor / 10;
+		if (check_leading_zero)
+		{
+			if (quotient)
+			{
+				*p_dest++ = quotient + ZERO;
+				rc++;
+				check_leading_zero = false;
+			}
+		}
+		else
+		{
+			*p_dest++ = quotient + ZERO;
+			rc++;
+		}
+		divisor = divisor / DIVISOR;
     }
     return (rc);
 }
 
 uint8_t longword_to_ascii (uint8_t *p_dest, uint32_t value)
 {
-    uint32_t divisor = 1000000000;
+    uint32_t divisor = DIVISOR_LONGWORD;
     uint8_t quotient;
     uint8_t rc = 0;
-
+	bool check_leading_zero = true;
+	
+	if (!value)
+	{
+		*p_dest = ZERO;
+		return (1);
+	}
+	
     for (uint8_t i = 0; i < CONFIG_LONGWORD_DIGITS_MAX; i++)
     {
 		quotient = value / divisor;
 		value = value % divisor;
-		*p_dest++ = quotient + 0x30;
-		rc++;
-		divisor = divisor / 10;
+		if (check_leading_zero)
+		{
+			if (quotient)
+			{
+				*p_dest++ = quotient + ZERO;
+				rc++;
+				check_leading_zero = false;
+			}
+		}
+		else
+		{
+			*p_dest++ = quotient + ZERO;
+			rc++;
+		}
+		divisor = divisor / DIVISOR;
     }
     return (rc);
 }
@@ -87,7 +145,7 @@ uint8_t ascii_to_byte (uint8_t *p_data, uint8_t len)
 
     for (i = 0; i < len; i++)
     {
-		rc = (rc * 10) + *(p_data + i) - 0x30;
+		rc = (rc * SCALER) + *(p_data + i) - ZERO;
     }
     return (rc);
 }
@@ -99,7 +157,7 @@ uint16_t ascii_to_word (uint8_t *p_data, uint8_t len)
 
     for (i = 0; i < len; i++)
     {
-		rc = (rc * 10) + *(p_data + i) - 0x30;
+		rc = (rc * SCALER) + *(p_data + i) - ZERO;
     }
     return (rc);
 }
@@ -111,7 +169,7 @@ uint32_t ascii_to_longword (uint8_t *p_data, uint8_t len)
 
     for (i = 0; i < len; i++)
     {
-		rc = (rc * 10) + *(p_data + i) - 0x30;
+		rc = (rc * SCALER) + *(p_data + i) - ZERO;
     }
     return (rc);
 }
@@ -119,7 +177,7 @@ uint32_t ascii_to_longword (uint8_t *p_data, uint8_t len)
 static uint8_t bcd_convert (char nibble)
 {
 	if (nibble >= '0' && nibble <= '9')
-		return (nibble - 0x30);
+		return (nibble - ZERO);
 	
 	if (nibble == 'A' || nibble == 'a') 
 		return (10);

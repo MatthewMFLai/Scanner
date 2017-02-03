@@ -95,8 +95,8 @@ static  ble_gap_scan_params_t m_scan_params =
     .active      = SCAN_ACTIVE,
     .selective   = SCAN_SELECTIVE,
     .p_whitelist = &whitelistcontrol,
-    .interval    = SCAN_INTERVAL,
-    .window      = SCAN_WINDOW,
+    .interval    = 0,
+    .window      = 0,
     .timeout     = SCAN_TIMEOUT
   };
 
@@ -182,6 +182,8 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
 void uart_event_handle(app_uart_evt_t * p_event)
 {
     //static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
+	uint16_t config_size;
+	char config_data_src[PSTORE_MAX_BLOCK] ={0};
 	static uint8_t data_array[APP_ATCMD_MAX_DATA_LEN];
     static uint16_t index = 0;
 
@@ -208,9 +210,15 @@ void uart_event_handle(app_uart_evt_t * p_event)
 				switch (atcmd_parse(index, (char *)data_array)) {
 					case APP_ATCMD_ACT_ENABLE_SCAN :
 						if (atcmd_scan_enabled())
+						{
+							config_hdlr_set_byte("sc01", 1);
 							scan_start();
+						}
 						else
+						{
+							config_hdlr_set_byte("sc01", 0);
 							sd_ble_gap_scan_stop();
+						}
 						atcmd_reply_ok();
 						break;
 						
@@ -222,6 +230,8 @@ void uart_event_handle(app_uart_evt_t * p_event)
 						atcmd_get_scan_param(&new_scan_interval, &new_scan_window);
 						m_scan_params.interval = new_scan_interval;
 						m_scan_params.window = new_scan_window;
+						config_hdlr_set_word("sc03", new_scan_interval);
+						config_hdlr_set_word("sc04", new_scan_window);
 						atcmd_reply_ok();
 						break;
 						
@@ -247,6 +257,13 @@ void uart_event_handle(app_uart_evt_t * p_event)
 						
 					case APP_ATCMD_ACT_CONFIG_GET_VER :
 						atcmd_reply_config_ver();
+						break;
+
+					case APP_ATCMD_ACT_CONFIG_UPD :
+						config_size = config_hdlr_build((uint8_t *)config_data_src);
+						//SEGGER_RTT_printf(0, "config data: rc %d size: %d content: %s\n", config_size, strlen(config_data_src), config_data_src);
+						pstore_set((uint8_t *)config_data_src, config_size);
+						atcmd_reply_ok();
 						break;
 						
 					default :
@@ -726,6 +743,8 @@ int main(void)
 	uint8_t config_data_raw[PSTORE_MAX_BLOCK] = {0};
 	uint16_t config_size;
 	uint16_t param_size;
+	uint8_t bytedata;
+	uint32_t longdata;
 	uint32_t err_code;
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, NULL);
 	
@@ -754,12 +773,17 @@ int main(void)
     if (config_hdlr_get_bcd("b401", &param_size, (char *)trackr2.addr))
 		big_to_small_endian(trackr2.addr, APP_DEVICE_ID_LENGTH);
 	
+	// Set scan parameters
+	config_hdlr_get_word("sc03", &m_scan_params.interval);
+	config_hdlr_get_word("sc04", &m_scan_params.window);
+	
 	sscan_set_device_id(0, beacon.addr);
 	if (config_hdlr_get_bcd("b102", &param_size, (char *)m_beacon_uuid))
 		sscan_set_device_uuid(0, m_beacon_uuid);
 	if (config_hdlr_get_bcd("b105", &param_size, (char *)m_aes128_key))
 		sscan_set_encryption_key(0, m_aes128_key);
-	sscan_set_timeout_window(0, APP_NO_ADV_GAP_TICKS);
+	if (config_hdlr_get_longword("b108", &longdata))
+		sscan_set_timeout_window(0, longdata);
 	sscan_enable_decryption(0);
 	sscan_enable_beacon(0);
 	
@@ -768,21 +792,24 @@ int main(void)
 		sscan_set_device_uuid(1, m_beacon2_uuid);
 	if (config_hdlr_get_bcd("b205", &param_size, (char *)m_aes128_key2))
 		sscan_set_encryption_key(1, m_aes128_key2);
-	sscan_set_timeout_window(1, APP_NO_ADV_GAP_TICKS);
+	if (config_hdlr_get_longword("b208", &longdata))
+		sscan_set_timeout_window(1, longdata);
 	sscan_enable_decryption(1);
 	sscan_enable_beacon(1);
 	
 	sscan_set_device_id(2, trackr.addr);
 	sscan_set_device_uuid(2, m_beacon_uuid);
 	sscan_set_encryption_key(2, m_aes128_key);
-	sscan_set_timeout_window(2, APP_NO_ADV_GAP_TICKS);
+	if (config_hdlr_get_longword("b308", &longdata))
+		sscan_set_timeout_window(2, longdata);
 	sscan_disable_decryption(2);
 	sscan_enable_beacon(2);
 	
 	sscan_set_device_id(3, trackr2.addr);
 	sscan_set_device_uuid(3, m_beacon_uuid);
 	sscan_set_encryption_key(3, m_aes128_key);
-	sscan_set_timeout_window(3, APP_NO_ADV_GAP_TICKS);
+	if (config_hdlr_get_longword("b408", &longdata))
+		sscan_set_timeout_window(3, longdata);
 	sscan_disable_decryption(3);
 	sscan_enable_beacon(3);
 	
@@ -792,8 +819,10 @@ int main(void)
 	
     // Start scanning for peripherals and initiate connection
     // with devices that advertise NUS UUID.
-	// Activate scan with AT command at$scan from MCU side.
-    // scan_start();
+	// Activate scan with data from pStorage.
+	if (config_hdlr_get_byte("sc01", &bytedata))
+		if (bytedata)
+			scan_start();
 
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);

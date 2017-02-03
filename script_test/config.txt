@@ -32,6 +32,8 @@ b105=3112233445566778899aabbccddeeff1
 b106=80
 # Transmit power (dBm)
 b107=0 
+# Supervisory timeout ticks
+b108=250000
 
 # beacon 2 related parameters
 # 6-byte device id
@@ -48,6 +50,8 @@ b205=f112233445566778899aabbccddeef31
 b206=80
 # Transmit power (dBm)
 b207=0 
+# Supervisory timeout ticks
+b208=250000
 
 # beacon 3 related parameters
 # 6-byte device id
@@ -64,6 +68,8 @@ b305=00000000000000000000000000000000
 b306=80
 # Transmit power (dBm)
 b307=0 
+# Supervisory timeout ticks
+b308=250000
 
 # beacon 4 related parameters
 # 6-byte device id
@@ -80,3 +86,5 @@ b405=00000000000000000000000000000000
 b406=80
 # Transmit power (dBm)
 b407=0
+# Supervisory timeout ticks
+b408=250000

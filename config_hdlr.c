@@ -67,7 +67,7 @@ void config_hdlr_parse(uint16_t len, uint8_t *p_data)
 		cur_idx = limit_idx + 1;
     }
     m_param_max = param_idx;
-	//SEGGER_RTT_printf(0, "config hdlr: num of params: %d\n", m_param_max);
+	SEGGER_RTT_printf(0, "config hdlr: num of params: %d\n", m_param_max);
 }
 
 // The value string, once found, will be copied into the passed in buffer, with the
@@ -188,10 +188,12 @@ uint16_t config_hdlr_build(uint8_t *p_dest)
     {
 		memcpy(p_dest, config_data[idx].key, CONFIG_KEY_LEN);
 		p_dest += CONFIG_KEY_LEN;
-		*p_dest++ = CONFIG_EQUAL;
+		*p_dest = CONFIG_EQUAL;
+		p_dest++;
 		memcpy(p_dest, config_data[idx].value, config_data[idx].len);
-			p_dest += config_data[idx].len;
-		*p_dest++ = CONFIG_LIMITER;
+		p_dest += config_data[idx].len;
+		*p_dest = CONFIG_LIMITER;
+		p_dest++;
 		rc += (CONFIG_KEY_LEN + config_data[idx].len + 2);
     }
     return (rc);
@@ -204,7 +206,7 @@ bool config_hdlr_set_string(char *p_key, uint16_t len, char *p_src)
     uint16_t idx = 0;
 
     if (len > CONFIG_VALUE_LEN)
-	return false;
+		return false;
 
     while (idx < m_param_max)
     {
@@ -214,7 +216,7 @@ bool config_hdlr_set_string(char *p_key, uint16_t len, char *p_src)
 			continue;
 		}
 
-		memset(config_data[idx].value, 0, CONFIG_KEY_LEN);	
+		memset(config_data[idx].value, 0, CONFIG_VALUE_LEN);	
 		memcpy(config_data[idx].value, p_src, len);
 		config_data[idx].len = len;
 		return true;
@@ -232,7 +234,9 @@ bool config_hdlr_set_byte(char *p_key, uint8_t value)
 			continue;
 		}
 
-		config_data[idx].len = byte_to_ascii(config_data[idx].value, value); 
+		memset(config_data[idx].value, 0, CONFIG_VALUE_LEN);
+		config_data[idx].len = byte_to_ascii(config_data[idx].value, value);
+		//SEGGER_RTT_printf(0, "config hdlr: set byte: %d %s\n", idx, config_data[idx].value);		
 		return true;
     }
     return false;
@@ -249,7 +253,9 @@ bool config_hdlr_set_word(char *p_key, uint16_t value)
 			continue;
 		}
 
-		config_data[idx].len = word_to_ascii(config_data[idx].value, value); 
+		memset(config_data[idx].value, 0, CONFIG_VALUE_LEN);
+		config_data[idx].len = word_to_ascii(config_data[idx].value, value);
+		//SEGGER_RTT_printf(0, "config hdlr: set word: %d %s\n", idx, config_data[idx].value);		
 		return true;
     }
     return false;
@@ -266,7 +272,9 @@ bool config_hdlr_set_longword(char *p_key, uint32_t value)
 			continue;
 		}
 
-		config_data[idx].len = longword_to_ascii(config_data[idx].value, value); 
+		memset(config_data[idx].value, 0, CONFIG_VALUE_LEN);
+		config_data[idx].len = longword_to_ascii(config_data[idx].value, value);
+		//SEGGER_RTT_printf(0, "config hdlr: set long: %d %s\n", idx, config_data[idx].value);
 		return true;
     }
     return false;
