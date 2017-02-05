@@ -37,7 +37,6 @@ remduplicates = $(strip $(if $1,$(firstword $1) $(call remduplicates,$(filter-ou
 
 #source common to all targets
 C_SOURCE_FILES += \
-$(abspath ../../../../../../components/libraries/button/app_button.c) \
 $(abspath ../../../../../../components/libraries/util/app_error.c) \
 $(abspath ../../../../../../components/libraries/util/app_error_weak.c) \
 $(abspath ../../../../../../components/libraries/fifo/app_fifo.c) \
@@ -53,17 +52,12 @@ $(abspath ../../../../../../components/drivers_nrf/common/nrf_drv_common.c) \
 $(abspath ../../../../../../components/drivers_nrf/gpiote/nrf_drv_gpiote.c) \
 $(abspath ../../../../../../components/drivers_nrf/uart/nrf_drv_uart.c) \
 $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
-$(abspath ../../../../../bsp/bsp.c) \
-$(abspath ../../../../../bsp/bsp_btn_ble.c) \
 $(abspath ../../../util.c) \
 $(abspath ../../../pstore.c) \
 $(abspath ../../../config_hdlr.c) \
 $(abspath ../../../atcmd.c) \
 $(abspath ../../../secure_scan.c) \
 $(abspath ../../../main.c) \
-$(abspath ../../../../../../external/segger_rtt/RTT_Syscalls_GCC.c) \
-$(abspath ../../../../../../external/segger_rtt/SEGGER_RTT.c) \
-$(abspath ../../../../../../external/segger_rtt/SEGGER_RTT_printf.c) \
 $(abspath ../../../../../../components/ble/common/ble_advdata.c) \
 $(abspath ../../../../../../components/ble/common/ble_conn_params.c) \
 $(abspath ../../../../../../components/ble/ble_db_discovery/ble_db_discovery.c) \
@@ -79,7 +73,6 @@ ASM_SOURCE_FILES  = $(abspath ../../../../../../components/toolchain/gcc/gcc_sta
 INC_PATHS  = -I$(abspath ../../../config/ble_app_uart_c_s132_pca10040)
 INC_PATHS += -I$(abspath ../../../config)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/config)
-INC_PATHS += -I$(abspath ../../../../../bsp)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/fifo)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/delay)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/fstorage/config)
@@ -116,7 +109,6 @@ BUILD_DIRECTORIES := $(sort $(OBJECT_DIRECTORY) $(OUTPUT_BINARY_DIRECTORY) $(LIS
 #flags common to all targets
 CFLAGS  = -DNRF52
 CFLAGS += -DSOFTDEVICE_PRESENT
-CFLAGS += -DBOARD_PCA10040
 CFLAGS += -DNRF52_PAN_12
 CFLAGS += -DNRF52_PAN_15
 CFLAGS += -DNRF52_PAN_58
@@ -128,7 +120,7 @@ CFLAGS += -DNRF52_PAN_51
 CFLAGS += -DNRF52_PAN_36
 CFLAGS += -DNRF52_PAN_53
 CFLAGS += -D__HEAP_SIZE=0
-CFLAGS += -DNRF_LOG_USES_RTT=1
+CFLAGS += -DNRF_LOG_USES_RTT=0
 CFLAGS += -DS132
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DBLE_STACK_SUPPORT_REQD
