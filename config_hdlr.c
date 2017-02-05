@@ -67,7 +67,7 @@ void config_hdlr_parse(uint16_t len, uint8_t *p_data)
 		cur_idx = limit_idx + 1;
     }
     m_param_max = param_idx;
-	SEGGER_RTT_printf(0, "config hdlr: num of params: %d\n", m_param_max);
+	//SEGGER_RTT_printf(0, "config hdlr: num of params: %d\n", m_param_max);
 }
 
 // The value string, once found, will be copied into the passed in buffer, with the
