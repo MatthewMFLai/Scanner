@@ -152,9 +152,6 @@ static void scan_start(void)
     
     err_code = sd_ble_gap_scan_start(&m_scan_params);
     APP_ERROR_CHECK(err_code);
-    
-    //err_code = bsp_indication_set(BSP_INDICATE_SCANNING);
-    //APP_ERROR_CHECK(err_code);
 }
 
 
@@ -332,13 +329,7 @@ static void ble_nus_c_evt_handler(ble_nus_c_t * p_ble_nus_c, const ble_nus_c_evt
  */
 static void sleep_mode_enter(void)
 {
-    uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    APP_ERROR_CHECK(err_code);
-
-    // Prepare wakeup buttons.
-    err_code = bsp_btn_ble_sleep_mode_prepare();
-    APP_ERROR_CHECK(err_code);
-
+    uint32_t err_code;
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
     err_code = sd_power_system_off();
     APP_ERROR_CHECK(err_code);
@@ -496,8 +487,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             if (is_uuid_present(&m_nus_uuid, p_adv_report))
             {
 				//SEGGER_RTT_printf(0, "time diff: %d\n", time_diff);
-				err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-				APP_ERROR_CHECK(err_code);
 				//err_code = app_timer_stop(m_app_timer_id);
 				//APP_ERROR_CHECK(err_code);
 				//err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
@@ -511,8 +500,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
                 if (err_code == NRF_SUCCESS)
                 {
                     // scan is automatically stopped by the connect
-                    err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-                    APP_ERROR_CHECK(err_code);
                     APPL_LOG("Connecting to target %02x%02x%02x%02x%02x%02x\r\n",
                              p_adv_report->peer_addr.addr[0],
                              p_adv_report->peer_addr.addr[1],
@@ -528,8 +515,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 
         case BLE_GAP_EVT_CONNECTED:
             APPL_LOG("Connected to target\r\n");
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-            APP_ERROR_CHECK(err_code);
 
             // start discovery of services. The NUS Client waits for a discovery result
             err_code = ble_db_discovery_start(&m_ble_db_discovery, p_ble_evt->evt.gap_evt.conn_handle);
@@ -731,11 +716,7 @@ static void power_manage(void)
 
 static void timer_timeout_handler (void *p_context)
 {
-	uint32_t err_code;
-
 	sscan_check_disconnected();
-	err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-	APP_ERROR_CHECK(err_code);
 }
 
 int main(void)
