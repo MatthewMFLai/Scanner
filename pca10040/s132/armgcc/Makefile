@@ -68,6 +68,9 @@ $(abspath ../../../../../../components/softdevice/common/softdevice_handler/soft
 $(abspath ../../../../../../components/ble/ble_advertising/ble_advertising.c) \
 $(abspath ../../../../../../components/ble/ble_services/ble_nus/ble_nus.c) \
 $(abspath ../../../../../../components/libraries/fstorage/fstorage.c) \
+$(abspath ../../../../../../external/segger_rtt/RTT_Syscalls_GCC.c) \
+$(abspath ../../../../../../external/segger_rtt/SEGGER_RTT.c) \
+$(abspath ../../../../../../external/segger_rtt/SEGGER_RTT_printf.c) \
 
 #assembly files common to all targets
 ASM_SOURCE_FILES  = $(abspath ../../../../../../components/toolchain/gcc/gcc_startup_nrf52.s)
@@ -126,7 +129,7 @@ CFLAGS += -DNRF52_PAN_51
 CFLAGS += -DNRF52_PAN_36
 CFLAGS += -DNRF52_PAN_53
 CFLAGS += -D__HEAP_SIZE=0
-CFLAGS += -DNRF_LOG_USES_RTT=0
+CFLAGS += -DNRF_LOG_USES_RTT=1
 CFLAGS += -DS132
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DBLE_STACK_SUPPORT_REQD
@@ -138,7 +141,7 @@ CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DBSP_UART_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
-#CFLAGS += -Wall -Werror -O3 -g3
+CFLAGS += -Wall -Werror -O3 -g3
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 #CFLAGS += -DNRF_LOG_USES_UART=1
 # keep every function in separate section. This will allow linker to dump unused functions

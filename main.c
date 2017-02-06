@@ -749,6 +749,7 @@ static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t lengt
 {
     for (uint32_t i = 0; i < length; i++)
     {
+		SEGGER_RTT_printf(0, "byte: %x\n", p_data[i]);
         while(app_uart_put(p_data[i]) != NRF_SUCCESS);
     }
     while(app_uart_put('\n') != NRF_SUCCESS);
@@ -993,12 +994,12 @@ int main(void)
     nus_c_init();
 
 // From the NUS peripheral main module
-    //gap_params_init();
-    //services_init();
-    //advertising_init();
-    //conn_params_init();
-    //err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    //APP_ERROR_CHECK(err_code);
+    gap_params_init();
+    services_init();
+    advertising_init();
+    conn_params_init();
+    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+    APP_ERROR_CHECK(err_code);
 // From the NUS peripheral main module
 
 	// Matt: our code
