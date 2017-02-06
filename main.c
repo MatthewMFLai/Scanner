@@ -993,6 +993,12 @@ int main(void)
     nus_c_init();
 
 // From the NUS peripheral main module
+    //gap_params_init();
+    //services_init();
+    //advertising_init();
+    //conn_params_init();
+    //err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+    //APP_ERROR_CHECK(err_code);
 // From the NUS peripheral main module
 
 	// Matt: our code
