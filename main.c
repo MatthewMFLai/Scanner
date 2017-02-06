@@ -167,6 +167,34 @@ static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;
 
 static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
 // From the NUS peripheral main module
+
+// Matt: custom handler to send IN/OUT status to NUS client.
+static void update_nus_client(void)
+{
+    uint8_t data_array[BLE_NUS_MAX_DATA_LEN] = {0};
+    uint8_t index;
+	static uint8_t last_status = 0;
+	uint8_t cur_status;
+    uint32_t err_code;
+
+	cur_status = sscan_query_connected();
+	if (cur_status == last_status)
+		return;
+	else
+		last_status = cur_status;
+	
+	if (cur_status)
+		strcpy((char *)data_array, "IN");
+	else
+		strcpy((char *)data_array, "OUT");
+	index = strlen((char *)data_array);
+	err_code = ble_nus_string_send(&m_nus, data_array, index);
+	if (err_code != NRF_ERROR_INVALID_STATE)
+	{
+		APP_ERROR_CHECK(err_code);
+	}
+}
+// Matt: custom handler to send IN/OUT status to NUS client.
  
 /**@brief Function for asserts in the SoftDevice.
  *
@@ -403,6 +431,7 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 		sscan_set_last_msg(device_idx, p_data + 9);
 		sscan_set_last_timestamp(device_idx);
 		sscan_set_connected(device_idx);
+		update_nus_client();
 		return true;
 	}
 	return false;
@@ -701,6 +730,7 @@ static void power_manage(void)
 static void timer_timeout_handler (void *p_context)
 {
 	sscan_check_disconnected();
+	update_nus_client();
 }
 
 
@@ -749,7 +779,6 @@ static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t lengt
 {
     for (uint32_t i = 0; i < length; i++)
     {
-		SEGGER_RTT_printf(0, "byte: %x\n", p_data[i]);
         while(app_uart_put(p_data[i]) != NRF_SUCCESS);
     }
     while(app_uart_put('\n') != NRF_SUCCESS);
@@ -985,6 +1014,7 @@ int main(void)
 	uint16_t param_size;
 	uint8_t bytedata;
 	uint32_t longdata;
+	char verstr[10] = {0};
 	uint32_t err_code;
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, NULL);
 	
@@ -1072,6 +1102,16 @@ int main(void)
 		if (bytedata)
 			scan_start();
 
+	if (!config_hdlr_get_string("vers", &param_size, verstr))
+	{
+		strcpy(verstr, "NUL");
+	}
+	for (uint8_t i = 0; i < strlen(verstr); i++)
+	{
+		while(app_uart_put(verstr[i]) != NRF_SUCCESS);
+	}
+	while(app_uart_put('\n') != NRF_SUCCESS);
+	
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
 	
