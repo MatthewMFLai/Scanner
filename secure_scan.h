@@ -73,4 +73,6 @@ void sscan_set_connected(uint8_t device_idx);
 
 void sscan_check_disconnected(void);
 
+uint8_t sscan_query_connected(void);
+
 #endif  /* _ SECURE_SCAN_H__ */

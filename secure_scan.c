@@ -200,3 +200,8 @@ void sscan_check_disconnected(void)
 		atcmd_report_out();
 	}
 }
+
+uint8_t sscan_query_connected(void)
+{
+	return (m_cur_state);
+}
