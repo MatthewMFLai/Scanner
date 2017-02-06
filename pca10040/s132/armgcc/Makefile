@@ -65,6 +65,9 @@ $(abspath ../../../../../../components/ble/ble_services/ble_nus_c/ble_nus_c.c) \
 $(abspath ../../../../../../components/ble/common/ble_srv_common.c) \
 $(abspath ../../../../../../components/toolchain/system_nrf52.c) \
 $(abspath ../../../../../../components/softdevice/common/softdevice_handler/softdevice_handler.c) \
+$(abspath ../../../../../../components/ble/ble_advertising/ble_advertising.c) \
+$(abspath ../../../../../../components/ble/ble_services/ble_nus/ble_nus.c) \
+$(abspath ../../../../../../components/libraries/fstorage/fstorage.c) \
 
 #assembly files common to all targets
 ASM_SOURCE_FILES  = $(abspath ../../../../../../components/toolchain/gcc/gcc_startup_nrf52.s)
@@ -98,6 +101,9 @@ INC_PATHS += -I$(abspath ../../../../../../components/toolchain)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/common)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/trace)
 INC_PATHS += -I$(abspath ../../../../../../components/softdevice/common/softdevice_handler)
+INC_PATHS += -I$(abspath ../../../../../../components/ble/ble_services/ble_nus)
+INC_PATHS += -I$(abspath ../../../../../../components/ble/ble_advertising)
+INC_PATHS += -I$(abspath ../../../../../../components/libraries/experimental_section_vars)
 
 OBJECT_DIRECTORY = _build
 LISTING_DIRECTORY = $(OBJECT_DIRECTORY)
@@ -132,7 +138,7 @@ CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DBSP_UART_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
-CFLAGS += -Wall -Werror -O3 -g3
+#CFLAGS += -Wall -Werror -O3 -g3
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 #CFLAGS += -DNRF_LOG_USES_UART=1
 # keep every function in separate section. This will allow linker to dump unused functions
