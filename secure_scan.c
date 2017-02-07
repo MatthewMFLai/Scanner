@@ -5,6 +5,7 @@
 #include "softdevice_handler.h"
 #include "secure_scan.h"
 #include "atcmd.h"
+#include "uart_reply.h"
 
 static secure_scan_data_t beacons[APP_MAX_BEACON];
 static uint8_t m_cur_state;
@@ -165,7 +166,8 @@ void sscan_set_connected(uint8_t device_idx)
 	if (!m_cur_state)
 	{
 		m_cur_state = 1;
-		atcmd_report_in();
+		uart_reply_string(atcmd_get_in());
+		uart_reply_byte('\n');
 	}
 }
 void sscan_check_disconnected(void)
@@ -197,7 +199,8 @@ void sscan_check_disconnected(void)
 	if (m_cur_state)
 	{
 		m_cur_state = 0;
-		atcmd_report_out();
+		uart_reply_string(atcmd_get_out());
+		uart_reply_byte('\n');
 	}
 }
 

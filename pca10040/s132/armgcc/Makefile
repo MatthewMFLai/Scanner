@@ -52,6 +52,7 @@ $(abspath ../../../../../../components/drivers_nrf/common/nrf_drv_common.c) \
 $(abspath ../../../../../../components/drivers_nrf/gpiote/nrf_drv_gpiote.c) \
 $(abspath ../../../../../../components/drivers_nrf/uart/nrf_drv_uart.c) \
 $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
+$(abspath ../../../uart_reply.c) \
 $(abspath ../../../util.c) \
 $(abspath ../../../pstore.c) \
 $(abspath ../../../config_hdlr.c) \

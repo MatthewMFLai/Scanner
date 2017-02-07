@@ -29,6 +29,7 @@
 
 #include "custom_board.h"
 #include "util.h"
+#include "uart_reply.h"
 #include "secure_scan.h"
 #include "atcmd.h"
 #include "pstore.h"
@@ -132,6 +133,9 @@ static uint8_t m_aes128_key2[APP_AES_LENGTH] =
 {
 	0
 };
+static char m_config_data_src[PSTORE_MAX_BLOCK];
+static uint8_t m_ble_data_src[APP_ATCMD_MAX_DATA_LEN];
+static char m_atcmd_resp_str[PSTORE_MAX_BLOCK + 1];
 APP_TIMER_DEF(m_app_timer_id);
 
 // From the NUS peripheral main module
@@ -222,7 +226,6 @@ static void scan_start(void)
     APP_ERROR_CHECK(err_code);
 }
 
-
 /**@brief Function for handling database discovery events.
  *
  * @details This function is callback function to handle events from the database discovery module.
@@ -236,6 +239,89 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
     ble_nus_c_on_db_disc_evt(&m_ble_nus_c, p_evt);
 }
 
+static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
+{
+	uint16_t param_size;
+	char verstr[10] = {0};
+	uint16_t config_size;
+	uint16_t new_scan_interval;
+	uint16_t new_scan_window;
+	
+	memset(p_resp_str, 0, PSTORE_MAX_BLOCK + 1);
+	// Execute AT command.
+	switch (atcmd_parse(index, (char *)data_array)) {
+		case APP_ATCMD_ACT_ENABLE_SCAN :
+			if (atcmd_scan_enabled())
+			{
+				config_hdlr_set_byte("sc01", 1);
+				scan_start();
+			}
+			else
+			{
+				config_hdlr_set_byte("sc01", 0);
+				sd_ble_gap_scan_stop();
+			}
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+			
+		case APP_ATCMD_ACT_MODE_0 :
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+			
+		case APP_ATCMD_ACT_SCAN_INT :
+			atcmd_get_scan_param(&new_scan_interval, &new_scan_window);
+			m_scan_params.interval = new_scan_interval;
+			m_scan_params.window = new_scan_window;
+			config_hdlr_set_word("sc03", new_scan_interval);
+			config_hdlr_set_word("sc04", new_scan_window);
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+			
+		case APP_ATCMD_ACT_ENABLE_SCAN_READ :
+			*p_resp_str = atcmd_get_enable();
+			break;
+			
+		case APP_ATCMD_ACT_MODE_0_READ :
+			*p_resp_str = atcmd_get_mode();
+			break;
+			
+		case APP_ATCMD_ACT_SCAN_INT_READ :
+			memcpy(p_resp_str, atcmd_get_interval(), strlen(atcmd_get_interval()));
+			p_resp_str += strlen(atcmd_get_interval());
+			*p_resp_str = ' ';
+			p_resp_str++;
+			memcpy(p_resp_str, atcmd_get_window(), strlen(atcmd_get_window()));
+			break;
+
+		case APP_ATCMD_ACT_CONFIG_GET :
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+			
+		case APP_ATCMD_ACT_CONFIG_SET :
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+			
+		case APP_ATCMD_ACT_CONFIG_GET_VER :
+			if (!config_hdlr_get_string("vers", &param_size, verstr))
+			{
+				strcpy(verstr, "NUL");
+			}
+			memcpy(p_resp_str, verstr, strlen(verstr));
+			break;
+
+		case APP_ATCMD_ACT_CONFIG_UPD :
+			memset(m_config_data_src, 0, PSTORE_MAX_BLOCK);
+			config_size = config_hdlr_build((uint8_t *)m_config_data_src);
+			//SEGGER_RTT_printf(0, "config data: rc %d size: %d content: %s\n", config_size, strlen(config_data_src), config_data_src);
+			pstore_set((uint8_t *)m_config_data_src, config_size);
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+			
+		default :
+			memcpy(p_resp_str, atcmd_get_nack(), strlen(atcmd_get_nack()));
+			break;
+	}
+}
 
 /**@brief   Function for handling app_uart events.
  *
@@ -246,14 +332,8 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
  */
 void uart_event_handle(app_uart_evt_t * p_event)
 {
-    //static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
-	uint16_t config_size;
-	char config_data_src[PSTORE_MAX_BLOCK] ={0};
 	static uint8_t data_array[APP_ATCMD_MAX_DATA_LEN];
     static uint16_t index = 0;
-
-	uint16_t new_scan_interval;
-	uint16_t new_scan_window;
 	
     switch (p_event->evt_type)
     {
@@ -272,69 +352,9 @@ void uart_event_handle(app_uart_evt_t * p_event)
                 }*/
 				
 				// Execute AT command.
-				switch (atcmd_parse(index, (char *)data_array)) {
-					case APP_ATCMD_ACT_ENABLE_SCAN :
-						if (atcmd_scan_enabled())
-						{
-							config_hdlr_set_byte("sc01", 1);
-							scan_start();
-						}
-						else
-						{
-							config_hdlr_set_byte("sc01", 0);
-							sd_ble_gap_scan_stop();
-						}
-						atcmd_reply_ok();
-						break;
-						
-					case APP_ATCMD_ACT_MODE_0 :
-						atcmd_reply_ok();
-						break;
-						
-					case APP_ATCMD_ACT_SCAN_INT :
-						atcmd_get_scan_param(&new_scan_interval, &new_scan_window);
-						m_scan_params.interval = new_scan_interval;
-						m_scan_params.window = new_scan_window;
-						config_hdlr_set_word("sc03", new_scan_interval);
-						config_hdlr_set_word("sc04", new_scan_window);
-						atcmd_reply_ok();
-						break;
-						
-					case APP_ATCMD_ACT_ENABLE_SCAN_READ :
-						atcmd_reply_scan();
-						break;
-						
-					case APP_ATCMD_ACT_MODE_0_READ :
-						atcmd_reply_mode();
-						break;
-						
-					case APP_ATCMD_ACT_SCAN_INT_READ :
-						atcmd_reply_scanint();
-						break;
-
-					case APP_ATCMD_ACT_CONFIG_GET :
-						atcmd_reply_ok();
-						break;
-						
-					case APP_ATCMD_ACT_CONFIG_SET :
-						atcmd_reply_ok();
-						break;
-						
-					case APP_ATCMD_ACT_CONFIG_GET_VER :
-						atcmd_reply_config_ver();
-						break;
-
-					case APP_ATCMD_ACT_CONFIG_UPD :
-						config_size = config_hdlr_build((uint8_t *)config_data_src);
-						//SEGGER_RTT_printf(0, "config data: rc %d size: %d content: %s\n", config_size, strlen(config_data_src), config_data_src);
-						pstore_set((uint8_t *)config_data_src, config_size);
-						atcmd_reply_ok();
-						break;
-						
-					default :
-						atcmd_reply_nack();
-						break;
-				}
+				execute_atcmd(index, data_array, m_atcmd_resp_str);
+				m_atcmd_resp_str[strlen(m_atcmd_resp_str)] = '\n';
+				uart_reply_string(m_atcmd_resp_str);
                 index = 0;
             }
             break;
@@ -777,11 +797,20 @@ static void gap_params_init(void)
 /**@snippet [Handling the data received over BLE] */
 static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t length)
 {
-    for (uint32_t i = 0; i < length; i++)
-    {
-        while(app_uart_put(p_data[i]) != NRF_SUCCESS);
-    }
-    while(app_uart_put('\n') != NRF_SUCCESS);
+	uint32_t err_code;
+	
+	// Execute AT command.
+	memcpy(m_ble_data_src, p_data, length);
+	// Need to have the '\r' as the terminator!
+	m_ble_data_src[length] = '\r';
+	execute_atcmd(length + 1, m_ble_data_src, m_atcmd_resp_str);
+	//m_atcmd_resp_str[strlen(m_atcmd_resp_str)] = '\n';
+	err_code = ble_nus_string_send(&m_nus, (uint8_t *)m_atcmd_resp_str, strlen(m_atcmd_resp_str));
+	if (err_code != NRF_ERROR_INVALID_STATE)
+	{
+		APP_ERROR_CHECK(err_code);
+	}
+				
 }
 /**@snippet [Handling the data received over BLE] */
 
@@ -1106,11 +1135,8 @@ int main(void)
 	{
 		strcpy(verstr, "NUL");
 	}
-	for (uint8_t i = 0; i < strlen(verstr); i++)
-	{
-		while(app_uart_put(verstr[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	uart_reply_string(verstr);
+	uart_reply_byte('\n');
 	
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);

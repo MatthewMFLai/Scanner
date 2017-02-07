@@ -1,5 +1,5 @@
 # Config file version number
-vers=v1.0.1
+vers=v1.0.2
 
 # Scanner config parameters
 
@@ -59,7 +59,7 @@ b301=f3e30a6e5dd6
 # 16-byte UUID
 b302=00000000000000000000000000000000
 # enable scan (1) or disable scan (0)
-b303=1
+b303=0
 # encryption suppport (1) or no encryption (0)
 b304=0
 # encryption key
@@ -77,7 +77,7 @@ b401=faee97afd35a
 # 16-byte UUID
 b402=00000000000000000000000000000000
 # enable scan (1) or disable scan (0)
-b403=1
+b403=0
 # encryption suppport (1) or no encryption (0)
 b404=0
 # encryption key

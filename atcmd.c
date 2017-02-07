@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 #include "atcmd.h"
-#include "app_uart.h"
 #include "pstore.h"
 #include "SEGGER_RTT.h"
 
@@ -16,7 +16,6 @@ static char m_nack_str[] ="NACK";
 static char m_in_str[] ="IN";
 static char m_out_str[] ="OUT";
 static char m_def_building_code[] = "BUL001";
-static char m_null[] = "NUL";
 
 static char m_configdata[PSTORE_MAX_BLOCK];
 
@@ -408,30 +407,24 @@ uint8_t atcmd_scan_enabled(void)
 	return (m_scanner.enable);
 }
 
-void atcmd_reply_scan(void)
+char atcmd_get_enable(void)
 {
-	while(app_uart_put(m_scanner.enable_byte) != NRF_SUCCESS);
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	return (m_scanner.enable_byte);
 }
 
-void atcmd_reply_mode(void)
+char atcmd_get_mode(void)
 {
-	while(app_uart_put(m_scanner.mode_byte) != NRF_SUCCESS);
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	return (m_scanner.mode_byte);
 }
 
-void atcmd_reply_scanint(void)
+char *atcmd_get_interval(void)
 {
-	for (uint8_t i = 0; i < strlen(m_scanner.scan_interval_str); i++)
-	{
-		while(app_uart_put(m_scanner.scan_interval_str[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put(' ') != NRF_SUCCESS);
-	for (uint8_t i = 0; i < strlen(m_scanner.scan_window_str); i++)
-	{
-		while(app_uart_put(m_scanner.scan_window_str[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	return (m_scanner.scan_interval_str);
+}
+
+char *atcmd_get_window(void)
+{
+	return (m_scanner.scan_window_str);
 }
 
 /**@brief Function to store the current at command in the at command table.
@@ -444,51 +437,13 @@ void atcmd_reply_scanint(void)
  *          is more than 128 bytes. For a huge config data use the scheduler to
  *          send the data instead.
  */
-void atcmd_reply_config(void)
+char *atcmd_reply_config(void)
 {
-	uint8_t config_data_dest[PSTORE_MAX_BLOCK] = {0};
 	uint16_t config_size;
 	
-	config_size = pstore_get(config_data_dest);
-	config_data_dest[config_size] = 0x00;
-	//SEGGER_RTT_printf(0, "config data: size: %d content: %s\n", strlen((char *)config_data_dest), config_data_dest);
-	for (uint16_t i = 0; i < config_size; i++)
-	{
-		while(app_uart_put(config_data_dest[i]) != NRF_SUCCESS);
-	}
-}
-
-/**@brief Function to store the current at command in the at command table.
- * @details Use the built-in h/w encryption engine.
- * 
- * @param[in] p_data  pointer to the at command in the raw data buffer.
- * @param[in] cmd_len  size, in bytes, of the current at command.
- *
- * @Warning This routine may cause the watchdog timer to reset if the config data
- *          is more than 128 bytes. For a huge config data use the scheduler to
- *          send the data instead.
- */
-void atcmd_reply_config_ver(void)
-{
-	uint16_t len = strlen(m_scanner.version_str);
-	uint16_t i;
-	
-	if (len)
-	{
-		for (i = 0; i < len; i++)
-		{
-			while(app_uart_put(m_scanner.version_str[i]) != NRF_SUCCESS);
-		}
-	}
-	else
-	{
-		len = strlen(m_null);
-		for (i = 0; i < len; i++)
-		{
-			while(app_uart_put(m_null[i]) != NRF_SUCCESS);
-		}		
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	config_size = pstore_get((uint8_t *)m_configdata);
+	m_configdata[config_size] = 0x00;
+    return (m_configdata);
 }
 
 /**@brief Function to store the current at command in the at command table.
@@ -497,13 +452,9 @@ void atcmd_reply_config_ver(void)
  * @param[in] p_data  pointer to the at command in the raw data buffer.
  * @param[in] cmd_len  size, in bytes, of the current at command.
  */
-void atcmd_reply_ok(void)
+char *atcmd_get_ok(void)
 {
-	for (uint8_t i = 0; i < strlen(m_ok_str); i++)
-	{
-		while(app_uart_put(m_ok_str[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+    return (m_ok_str);
 }
 
 /**@brief Function to store the current at command in the at command table.
@@ -512,13 +463,9 @@ void atcmd_reply_ok(void)
  * @param[in] p_data  pointer to the at command in the raw data buffer.
  * @param[in] cmd_len  size, in bytes, of the current at command.
  */
-void atcmd_reply_nack(void)
+char *atcmd_get_nack(void)
 {
-	for (uint8_t i = 0; i < strlen(m_nack_str); i++)
-	{
-		while(app_uart_put(m_nack_str[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	return (m_nack_str);
 }
 
 /**@brief Function to store the current at command in the at command table.
@@ -527,13 +474,9 @@ void atcmd_reply_nack(void)
  * @param[in] p_data  pointer to the at command in the raw data buffer.
  * @param[in] cmd_len  size, in bytes, of the current at command.
  */
-void atcmd_report_in(void)
+char *atcmd_get_in(void)
 {
-	for (uint8_t i = 0; i < strlen(m_in_str); i++)
-	{
-		while(app_uart_put(m_in_str[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	return (m_in_str);
 }
 
 /**@brief Function to store the current at command in the at command table.
@@ -542,11 +485,7 @@ void atcmd_report_in(void)
  * @param[in] p_data  pointer to the at command in the raw data buffer.
  * @param[in] cmd_len  size, in bytes, of the current at command.
  */
-void atcmd_report_out(void)
+char *atcmd_get_out(void)
 {
-	for (uint8_t i = 0; i < strlen(m_out_str); i++)
-	{
-		while(app_uart_put(m_out_str[i]) != NRF_SUCCESS);
-	}
-	while(app_uart_put('\n') != NRF_SUCCESS);
+	return (m_out_str);
 }

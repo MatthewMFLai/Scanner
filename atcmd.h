@@ -49,13 +49,14 @@ void atcmd_init(void);
 uint8_t atcmd_parse(uint16_t buffer_len, char *p_data);
 void atcmd_get_scan_param(uint16_t *p_interval, uint16_t *p_window);
 uint8_t atcmd_scan_enabled(void);
-void atcmd_reply_scan(void);
-void atcmd_reply_mode(void);
-void atcmd_reply_scanint(void);
-void atcmd_reply_config(void);
-void atcmd_reply_config_ver(void);
-void atcmd_reply_ok(void);
-void atcmd_reply_nack(void);
-void atcmd_report_in(void);
-void atcmd_report_out(void);
+char atcmd_get_enable(void);
+char atcmd_get_mode(void);
+char *atcmd_get_interval(void);
+char *atcmd_get_window(void);
+
+char *atcmd_reply_config(void);
+char *atcmd_get_ok(void);
+char *atcmd_get_nack(void);
+char *atcmd_get_in(void);
+char *atcmd_get_out(void);
 #endif  /* _ ATCMD_H__ */
