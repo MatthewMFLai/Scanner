@@ -134,8 +134,9 @@ static uint8_t m_aes128_key2[APP_AES_LENGTH] =
 	0
 };
 static char m_config_data_src[PSTORE_MAX_BLOCK];
-static uint8_t m_ble_data_src[APP_ATCMD_MAX_DATA_LEN];
+static uint8_t m_ble_data_src[APP_ATCMD_MAX_DATA_LEN] = {0};
 static char m_atcmd_resp_str[PSTORE_MAX_BLOCK + 1];
+static uint8_t m_cur_scan_status;
 APP_TIMER_DEF(m_app_timer_id);
 
 // From the NUS peripheral main module
@@ -222,6 +223,10 @@ static void scan_start(void)
 {
     uint32_t err_code;
     
+	if (m_cur_scan_status)
+		return;
+	
+	m_cur_scan_status = 1;
     err_code = sd_ble_gap_scan_start(&m_scan_params);
     APP_ERROR_CHECK(err_code);
 }
@@ -798,19 +803,26 @@ static void gap_params_init(void)
 static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t length)
 {
 	uint32_t err_code;
+	uint16_t cur_len = strlen((char *)m_ble_data_src);
 	
 	// Execute AT command.
-	memcpy(m_ble_data_src, p_data, length);
-	// Need to have the '\r' as the terminator!
-	m_ble_data_src[length] = '\r';
-	execute_atcmd(length + 1, m_ble_data_src, m_atcmd_resp_str);
-	//m_atcmd_resp_str[strlen(m_atcmd_resp_str)] = '\n';
+	memcpy(m_ble_data_src + cur_len, p_data, length);
+	length += cur_len;
+	// Need to have the '\r' or ';' as the terminator!
+	if (m_ble_data_src[length-1] == ';')
+		m_ble_data_src[length-1] = '\r';
+	
+	if (m_ble_data_src[length-1] != '\r')
+		return;
+	
+	execute_atcmd(length, m_ble_data_src, m_atcmd_resp_str);
 	err_code = ble_nus_string_send(&m_nus, (uint8_t *)m_atcmd_resp_str, strlen(m_atcmd_resp_str));
 	if (err_code != NRF_ERROR_INVALID_STATE)
 	{
 		APP_ERROR_CHECK(err_code);
 	}
-				
+	// Clear the ble command buffer.
+	memset(m_ble_data_src, 0, APP_ATCMD_MAX_DATA_LEN);			
 }
 /**@snippet [Handling the data received over BLE] */
 
@@ -1123,6 +1135,9 @@ int main(void)
     //err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_SINGLE_SHOT, timer_timeout_handler);
 	err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
     APP_ERROR_CHECK(err_code);
+	
+	// Init current scan status.
+	m_cur_scan_status = 0;
 	
     // Start scanning for peripherals and initiate connection
     // with devices that advertise NUS UUID.

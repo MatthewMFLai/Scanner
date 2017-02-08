@@ -1,5 +1,5 @@
 # Config file version number
-vers=v1.0.2
+vers=v1.0.3
 
 # Scanner config parameters
 

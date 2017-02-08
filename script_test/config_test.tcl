@@ -5,6 +5,13 @@ proc serial_set {comport} {
 	return $serial
 }
 
+proc serial_set_115200 {comport} {
+	set serial [open $comport r+]
+	fconfigure $serial -mode "115200,n,8,1" -blocking 0 -buffering none -translation binary
+	fileevent $serial readable [list serial_receiver $serial]
+	return $serial
+}
+
 proc serial_receiver { chan } {
      if { [eof $chan] } {
          puts stderr "Closing $chan"
