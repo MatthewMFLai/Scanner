@@ -27,6 +27,7 @@
 #include "app_util_platform.h"
 // From the NUS peripheral main module
 
+#include "timestamp.h"
 #include "custom_board.h"
 #include "util.h"
 #include "uart_reply.h"
@@ -43,9 +44,9 @@
 
 #define NUS_SERVICE_UUID_TYPE   BLE_UUID_TYPE_VENDOR_BEGIN      /**< UUID type for the Nordic UART Service (vendor specific). */
 
-#define APP_TIMER_PRESCALER     0                               /**< Value of the RTC1 PRESCALER register. */
+#define APP_TIMER_PRESCALER     32                               /**< Value of the RTC1 PRESCALER register. */
 //#define APP_TIMER_OP_QUEUE_SIZE 2                               /**< Size of timer operation queues. */
-#define TIMER_INTERVAL          APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER) /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
+#define TIMER_INTERVAL          APP_TIMER_TICKS(62, APP_TIMER_PRESCALER) /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
 
 
 #define APPL_LOG                app_trace_log                   /**< Debug logger macro that will be used in this file to do logging of debug information over UART. */
@@ -137,6 +138,7 @@ static char m_config_data_src[PSTORE_MAX_BLOCK];
 static uint8_t m_ble_data_src[APP_ATCMD_MAX_DATA_LEN] = {0};
 static char m_atcmd_resp_str[PSTORE_MAX_BLOCK + 1];
 static uint8_t m_cur_scan_status;
+
 APP_TIMER_DEF(m_app_timer_id);
 
 // From the NUS peripheral main module
@@ -151,15 +153,18 @@ APP_TIMER_DEF(m_app_timer_id);
 #define APP_ADV_INTERVAL                64                                          /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS      180                                         /**< The advertising timeout (in units of seconds). */
 
-#define APP_TIMER_PRESCALER             0                                           /**< Value of the RTC1 PRESCALER register. */
+//#define APP_TIMER_PRESCALER             0                                           /**< Value of the RTC1 PRESCALER register. */
 #define APP_TIMER_OP_QUEUE_SIZE         4                                           /**< Size of timer operation queues. */
 
 #define MIN_CONN_INTERVAL               MSEC_TO_UNITS(20, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
 #define MAX_CONN_INTERVAL               MSEC_TO_UNITS(75, UNIT_1_25_MS)             /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
 #define SLAVE_LATENCY                   0                                           /**< Slave latency. */
 #define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)             /**< Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units. */
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000, APP_TIMER_PRESCALER) /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
+//#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
+//#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000, APP_TIMER_PRESCALER) /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(156, APP_TIMER_PRESCALER)  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
+#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(937, APP_TIMER_PRESCALER) /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
+
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
 #define DEAD_BEEF                       0xDEADBEEF                                  /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
@@ -246,11 +251,13 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
 
 static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 {
+	uint8_t val_str_len;
 	uint16_t param_size;
-	char verstr[10] = {0};
+	char datastr[16] = {0};
 	uint16_t config_size;
 	uint16_t new_scan_interval;
 	uint16_t new_scan_window;
+	uint32_t cur_ticks;
 	
 	memset(p_resp_str, 0, PSTORE_MAX_BLOCK + 1);
 	// Execute AT command.
@@ -264,6 +271,7 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 			else
 			{
 				config_hdlr_set_byte("sc01", 0);
+				m_cur_scan_status = 0;
 				sd_ble_gap_scan_stop();
 			}
 			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
@@ -307,11 +315,11 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 			break;
 			
 		case APP_ATCMD_ACT_CONFIG_GET_VER :
-			if (!config_hdlr_get_string("vers", &param_size, verstr))
+			if (!config_hdlr_get_string("vers", &param_size, datastr))
 			{
-				strcpy(verstr, "NUL");
+				strcpy(datastr, "NUL");
 			}
-			memcpy(p_resp_str, verstr, strlen(verstr));
+			memcpy(p_resp_str, datastr, strlen(datastr));
 			break;
 
 		case APP_ATCMD_ACT_CONFIG_UPD :
@@ -320,6 +328,12 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 			//SEGGER_RTT_printf(0, "config data: rc %d size: %d content: %s\n", config_size, strlen(config_data_src), config_data_src);
 			pstore_set((uint8_t *)m_config_data_src, config_size);
 			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));
+			break;
+		
+		case APP_ATCMD_ACT_CURRENT_TS :
+			app_timer_cnt_get(&cur_ticks);
+			val_str_len = longword_to_ascii((uint8_t *)datastr, cur_ticks);
+			memcpy(p_resp_str, datastr, val_str_len);
 			break;
 			
 		default :
@@ -754,8 +768,12 @@ static void power_manage(void)
 
 static void timer_timeout_handler (void *p_context)
 {
+	uint32_t cur_ticks;
+	
 	sscan_check_disconnected();
 	update_nus_client();
+	app_timer_cnt_get(&cur_ticks);
+	ts_check_and_set(cur_ticks);
 }
 
 

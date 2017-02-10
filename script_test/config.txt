@@ -1,5 +1,5 @@
 # Config file version number
-vers=v1.0.3
+vers=v1.0.4
 
 # Scanner config parameters
 
@@ -33,7 +33,7 @@ b106=80
 # Transmit power (dBm)
 b107=0 
 # Supervisory timeout ticks
-b108=250000
+b108=5000
 
 # beacon 2 related parameters
 # 6-byte device id
@@ -51,7 +51,7 @@ b206=80
 # Transmit power (dBm)
 b207=0 
 # Supervisory timeout ticks
-b208=250000
+b208=5000
 
 # beacon 3 related parameters
 # 6-byte device id
@@ -69,7 +69,7 @@ b306=80
 # Transmit power (dBm)
 b307=0 
 # Supervisory timeout ticks
-b308=250000
+b308=5000
 
 # beacon 4 related parameters
 # 6-byte device id
@@ -87,4 +87,4 @@ b406=80
 # Transmit power (dBm)
 b407=0
 # Supervisory timeout ticks
-b408=250000
+b408=5000
