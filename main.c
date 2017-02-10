@@ -179,26 +179,14 @@ static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, 
 // From the NUS peripheral main module
 
 // Matt: custom handler to send IN/OUT status to NUS client.
-static void update_nus_client(void)
+static void update_nus_client(char *data_array)
 {
-    uint8_t data_array[BLE_NUS_MAX_DATA_LEN] = {0};
+    //uint8_t data_array[BLE_NUS_MAX_DATA_LEN] = {0};
     uint8_t index;
-	static uint8_t last_status = 0;
-	uint8_t cur_status;
     uint32_t err_code;
-
-	cur_status = sscan_query_connected();
-	if (cur_status == last_status)
-		return;
-	else
-		last_status = cur_status;
 	
-	if (cur_status)
-		strcpy((char *)data_array, "IN");
-	else
-		strcpy((char *)data_array, "OUT");
-	index = strlen((char *)data_array);
-	err_code = ble_nus_string_send(&m_nus, data_array, index);
+	index = strlen(data_array);
+	err_code = ble_nus_string_send(&m_nus, (uint8_t *)data_array, index);
 	if (err_code != NRF_ERROR_INVALID_STATE)
 	{
 		APP_ERROR_CHECK(err_code);
@@ -332,7 +320,7 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 		
 		case APP_ATCMD_ACT_CURRENT_TS :
 			app_timer_cnt_get(&cur_ticks);
-			val_str_len = longword_to_ascii((uint8_t *)datastr, cur_ticks);
+			val_str_len = longword_to_ascii((uint8_t *)datastr, ts_check_and_set(cur_ticks));
 			memcpy(p_resp_str, datastr, val_str_len);
 			break;
 			
@@ -469,8 +457,24 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 	{
 		sscan_set_last_msg(device_idx, p_data + 9);
 		sscan_set_last_timestamp(device_idx);
-		sscan_set_connected(device_idx);
-		update_nus_client();
+		if (sscan_set_connected(device_idx) == RC_SSCAN_FIRST_CONNECT)
+		{
+			char ts_str[11] = {0};
+			char data_array[BLE_NUS_MAX_DATA_LEN] = {0};
+			uint32_t cur_ticks;
+					
+			app_timer_cnt_get(&cur_ticks);
+			longword_to_ascii((uint8_t *)ts_str, ts_check_and_set(cur_ticks));
+			uart_reply_string(atcmd_get_in());
+			uart_reply_byte(' ');
+			uart_reply_string(ts_str);
+			uart_reply_byte('\n');
+			
+			strcpy(data_array, atcmd_get_in());
+			data_array[strlen(data_array)] = ' ';
+			strcpy(data_array + strlen(data_array), ts_str);
+			update_nus_client(data_array);
+		}
 		return true;
 	}
 	return false;
@@ -770,8 +774,24 @@ static void timer_timeout_handler (void *p_context)
 {
 	uint32_t cur_ticks;
 	
-	sscan_check_disconnected();
-	update_nus_client();
+	if (sscan_check_disconnected() == RC_SSCAN_FIRST_DISCONNECT)
+	{
+			char ts_str[11] = {0};
+			char data_array[BLE_NUS_MAX_DATA_LEN] = {0};
+			uint32_t cur_ticks;
+					
+			app_timer_cnt_get(&cur_ticks);
+			longword_to_ascii((uint8_t *)ts_str, ts_check_and_set(cur_ticks));
+			uart_reply_string(atcmd_get_out());
+			uart_reply_byte(' ');
+			uart_reply_string(ts_str);
+			uart_reply_byte('\n');
+			
+			strcpy(data_array, atcmd_get_out());
+			data_array[strlen(data_array)] = ' ';
+			strcpy(data_array + strlen(data_array), ts_str);
+			update_nus_client(data_array);
+	}
 	app_timer_cnt_get(&cur_ticks);
 	ts_check_and_set(cur_ticks);
 }
