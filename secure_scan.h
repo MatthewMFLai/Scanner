@@ -7,6 +7,11 @@
 #define APP_MAX_BEACON    		4
 #define APP_DEVICE_ID_LENGTH    6
 
+#define RC_SSCAN_FIRST_CONNECT	  0
+#define RC_SSCAN_CONNECTED		  1
+#define RC_SSCAN_FIRST_DISCONNECT 2
+#define RC_SSCAN_DISCONNECTED	  3
+
 // This structure contains various status information for our service. 
 // The name is based on the naming convention used in Nordics SDKs. 
 // 'ble’ indicates that it is a Bluetooth Low Energy relevant structure and 
@@ -69,9 +74,9 @@ void sscan_set_last_msg(uint8_t device_idx, uint8_t * p_data);
 
 void sscan_set_last_timestamp(uint8_t device_idx);
 
-void sscan_set_connected(uint8_t device_idx);
+uint8_t sscan_set_connected(uint8_t device_idx);
 
-void sscan_check_disconnected(void);
+uint8_t sscan_check_disconnected(void);
 
 uint8_t sscan_query_connected(void);
 

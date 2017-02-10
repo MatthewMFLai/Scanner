@@ -4,8 +4,6 @@
 #include "app_timer.h"
 #include "softdevice_handler.h"
 #include "secure_scan.h"
-#include "atcmd.h"
-#include "uart_reply.h"
 
 static secure_scan_data_t beacons[APP_MAX_BEACON];
 static uint8_t m_cur_state;
@@ -60,6 +58,7 @@ void sscan_init(void)
 		memset(&beacons[device_idx], 0, sizeof(secure_scan_data_t));
 	m_cur_state = 0; // Disconnected.
 }
+
 void sscan_set_device_id(uint8_t device_idx, uint8_t *p_data)
 {
 	memcpy(beacons[device_idx].beacon_addr, p_data, APP_DEVICE_ID_LENGTH);
@@ -155,22 +154,25 @@ void sscan_set_last_msg(uint8_t device_idx, uint8_t * p_data)
 {
 	memcpy(beacons[device_idx].prev_adv_msg, p_data, APP_AES_LENGTH);	
 }
+
 void sscan_set_last_timestamp(uint8_t device_idx)
 {
 	app_timer_cnt_get(&beacons[device_idx].last_timestamp);	
 }
-void sscan_set_connected(uint8_t device_idx)
+
+uint8_t sscan_set_connected(uint8_t device_idx)
 {
 	// Send disconnect message to UART.
 	beacons[device_idx].connected = 1;
 	if (!m_cur_state)
 	{
 		m_cur_state = 1;
-		uart_reply_string(atcmd_get_in());
-		uart_reply_byte('\n');
+		return (RC_SSCAN_FIRST_CONNECT);
 	}
+	return (RC_SSCAN_CONNECTED);
 }
-void sscan_check_disconnected(void)
+
+uint8_t sscan_check_disconnected(void)
 {
 	uint8_t device_idx;
 	uint32_t cur_timestamp;
@@ -192,16 +194,16 @@ void sscan_check_disconnected(void)
 	{
 		if (beacons[device_idx].beacon_enabled && beacons[device_idx].connected)
 		{
-			return;
+			return (RC_SSCAN_CONNECTED);
 		}
 	}
 	// Send disconnect message to UART.
 	if (m_cur_state)
 	{
 		m_cur_state = 0;
-		uart_reply_string(atcmd_get_out());
-		uart_reply_byte('\n');
+		return (RC_SSCAN_FIRST_DISCONNECT);
 	}
+	return (RC_SSCAN_DISCONNECTED);
 }
 
 uint8_t sscan_query_connected(void)
