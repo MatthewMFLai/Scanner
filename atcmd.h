@@ -3,6 +3,7 @@
 #define ATCMD_H__
 										
 #define APP_ATCMD_LENGTH        0x10
+#define APP_ATCMD_SENTENCE_LEN  0x40
 #define APP_ATCMD_PARA_LENGTH	0X10
 #define APP_ATCMD_PARA_MAX   	4
 
@@ -17,6 +18,7 @@
 #define APP_ATCMD_ACT_CONFIG_GET_VER    8
 #define APP_ATCMD_ACT_CONFIG_UPD        9
 #define APP_ATCMD_ACT_CURRENT_TS       10
+#define APP_ATCMD_ACT_LAST_SENTENCE    11
 #define APP_ATCMD_NOT_SUPPORTED     0xff
 
 #define APP_BUILDING_CODE_LENGTH	0X10
@@ -60,4 +62,7 @@ char *atcmd_get_ok(void);
 char *atcmd_get_nack(void);
 char *atcmd_get_in(void);
 char *atcmd_get_out(void);
+
+void atcmd_set_lastcmd(char *p_src);
+char *atcmd_get_lastcmd(void);
 #endif  /* _ ATCMD_H__ */

@@ -18,6 +18,7 @@ static char m_out_str[] ="OUT";
 static char m_def_building_code[] = "BUL001";
 
 static char m_configdata[PSTORE_MAX_BLOCK];
+static char m_last_sentence[APP_ATCMD_SENTENCE_LEN] = "NUL";
 
 static atcmd_data_t m_scanner;
 
@@ -32,7 +33,8 @@ static const char * m_atcmds[] = {
 	"at$cfgset",
 	"at$cfggetv?",
 	"at$cfgupd",
-	"at$curts?"
+	"at$curts?",
+	"at$lastsen?"
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
@@ -305,6 +307,7 @@ static bool atcmd_extract_cmd(uint16_t buffer_len, char *p_data)
 			
 		case APP_ATCMD_ACT_CONFIG_UPD :
 		case APP_ATCMD_ACT_CURRENT_TS :
+		case APP_ATCMD_ACT_LAST_SENTENCE :
 			break;
 			
 		default :
@@ -361,6 +364,10 @@ static uint8_t atcmd_run_cmd()
 
 		case APP_ATCMD_ACT_CURRENT_TS :
 			rc = APP_ATCMD_ACT_CURRENT_TS;
+			break;
+			
+		case APP_ATCMD_ACT_LAST_SENTENCE :
+			rc = APP_ATCMD_ACT_LAST_SENTENCE;
 			break;
 			
 		default :
@@ -494,4 +501,15 @@ char *atcmd_get_in(void)
 char *atcmd_get_out(void)
 {
 	return (m_out_str);
+}
+
+void atcmd_set_lastcmd(char *p_src)
+{
+	memset(m_last_sentence, 0, APP_ATCMD_SENTENCE_LEN);
+	strcpy(m_last_sentence, p_src);
+}
+
+char *atcmd_get_lastcmd(void)
+{
+	return (m_last_sentence);
 }

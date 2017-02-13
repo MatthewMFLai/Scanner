@@ -323,9 +323,12 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 			val_str_len = longword_to_ascii((uint8_t *)datastr, ts_check_and_set(cur_ticks));
 			memcpy(p_resp_str, datastr, val_str_len);
 			break;
+		
+		case APP_ATCMD_ACT_LAST_SENTENCE :
+			memcpy(p_resp_str, atcmd_get_lastcmd(), strlen(atcmd_get_lastcmd()));
+			break;
 			
 		default :
-			memcpy(p_resp_str, atcmd_get_nack(), strlen(atcmd_get_nack()));
 			break;
 	}
 }
@@ -465,15 +468,16 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 					
 			app_timer_cnt_get(&cur_ticks);
 			longword_to_ascii((uint8_t *)ts_str, ts_check_and_set(cur_ticks));
-			uart_reply_string(atcmd_get_in());
-			uart_reply_byte(' ');
-			uart_reply_string(ts_str);
-			uart_reply_byte('\n');
 			
 			strcpy(data_array, atcmd_get_in());
 			data_array[strlen(data_array)] = ' ';
 			strcpy(data_array + strlen(data_array), ts_str);
+
+			uart_reply_string(data_array);
+			uart_reply_byte('\n');			
 			update_nus_client(data_array);
+			
+			atcmd_set_lastcmd(data_array);
 		}
 		return true;
 	}
@@ -776,21 +780,22 @@ static void timer_timeout_handler (void *p_context)
 	
 	if (sscan_check_disconnected() == RC_SSCAN_FIRST_DISCONNECT)
 	{
-			char ts_str[11] = {0};
-			char data_array[BLE_NUS_MAX_DATA_LEN] = {0};
-			uint32_t cur_ticks;
-					
-			app_timer_cnt_get(&cur_ticks);
-			longword_to_ascii((uint8_t *)ts_str, ts_check_and_set(cur_ticks));
-			uart_reply_string(atcmd_get_out());
-			uart_reply_byte(' ');
-			uart_reply_string(ts_str);
-			uart_reply_byte('\n');
-			
-			strcpy(data_array, atcmd_get_out());
-			data_array[strlen(data_array)] = ' ';
-			strcpy(data_array + strlen(data_array), ts_str);
-			update_nus_client(data_array);
+		char ts_str[11] = {0};
+		char data_array[BLE_NUS_MAX_DATA_LEN] = {0};
+		uint32_t cur_ticks;
+				
+		app_timer_cnt_get(&cur_ticks);
+		longword_to_ascii((uint8_t *)ts_str, ts_check_and_set(cur_ticks));
+		
+		strcpy(data_array, atcmd_get_out());
+		data_array[strlen(data_array)] = ' ';
+		strcpy(data_array + strlen(data_array), ts_str);
+
+		uart_reply_string(data_array);
+		uart_reply_byte('\n');			
+		update_nus_client(data_array);
+		
+		atcmd_set_lastcmd(data_array);
 	}
 	app_timer_cnt_get(&cur_ticks);
 	ts_check_and_set(cur_ticks);
