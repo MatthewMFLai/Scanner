@@ -17,7 +17,7 @@ static uint32_t m_counter = 0x7c845f92;
  * @param[out] p_out  pointer to the encrypted 16-byte UUID array
  * @param[in] counter new counter value. Should be incrementing...
  */
-static void encrypt_128bit_uuid (uint8_t *p_data, uint8_t *p_key, uint8_t *p_out, uint32_t counter)
+void encrypt_128bit_uuid (uint8_t *p_data, uint8_t *p_key, uint8_t *p_out, uint32_t counter)
 {
 	nrf_ecb_hal_data_t aes_struct;
 	uint8_t aes_data[APP_AES_LENGTH];
@@ -36,7 +36,7 @@ static void encrypt_128bit_uuid (uint8_t *p_data, uint8_t *p_key, uint8_t *p_out
 	memset (aes_struct.cleartext, 0xaa, sizeof(aes_struct.cleartext)); //todo: use more random data
 	
 	// Add counter
-	//aes_struct.cleartext[0] += counter;
+	counter += m_counter;
 	memcpy(&aes_struct.cleartext[0], &counter, sizeof(counter));
 	
 	//Creating chipertext
@@ -136,7 +136,7 @@ bool sscan_decrypt_match_uuid (uint8_t device_idx, uint8_t *p_data, uint32_t cou
 	//for (int i = 0; i < 31; i++)
     //    SEGGER_RTT_printf(0, "data[%d]: 0x%#02x\n", i, p_data[i]); // Print service UUID should match definition BLE_UUID_OUR_SERVICE
 	//SEGGER_RTT_printf(0, "counter_tick: 0x%#08x\n", counter_tick);
-	encrypt_128bit_uuid(p_data, beacons[device_idx].aes128_key, extracted_uuid, m_counter + counter_tick);
+	encrypt_128bit_uuid(p_data, beacons[device_idx].aes128_key, extracted_uuid, counter_tick);
 	if (!memcmp(extracted_uuid, beacons[device_idx].beacon_uuid, APP_AES_LENGTH))
 	{
 		return true;

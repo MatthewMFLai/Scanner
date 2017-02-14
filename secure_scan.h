@@ -80,4 +80,6 @@ uint8_t sscan_check_disconnected(void);
 
 uint8_t sscan_query_connected(void);
 
+void encrypt_128bit_uuid (uint8_t *p_data, uint8_t *p_key, uint8_t *p_out, uint32_t counter);
+
 #endif  /* _ SECURE_SCAN_H__ */

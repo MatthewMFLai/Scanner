@@ -4,7 +4,7 @@
 #include <string.h>
 #include "util.h"
 #include "config_hdlr.h"
-#include "SEGGER_RTT.h"
+//#include "SEGGER_RTT.h"
 
 static config_hdlr_t config_data[CONFIG_MAX_PARAMS];
 static uint16_t m_param_max;

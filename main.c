@@ -329,6 +329,7 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 			break;
 			
 		default :
+			memcpy(p_resp_str, atcmd_get_nack(), strlen(atcmd_get_nack()));
 			break;
 	}
 }
