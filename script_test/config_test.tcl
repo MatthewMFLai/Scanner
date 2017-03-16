@@ -69,3 +69,16 @@ proc config_parse {filename} {
 	#puts -nonewline "at\$cfgset $version [string length $configbody] $configbody"	
 	return
  }
+
+ proc at_send {fd data} {
+     set cmd "at\$"
+	 append cmd $data
+	 append cmd "\r"
+	 puts -nonewline $fd $cmd
+	 return
+ }
+ 
+ proc disconnect {fd} {
+     puts -nonewline $fd "%%\r"
+	 return
+ }
