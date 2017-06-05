@@ -178,6 +178,10 @@ static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;
 static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
 // From the NUS peripheral main module
 
+// Custom test code for Mike's enforcer test.
+static int8_t m_rx_rssi = 0;
+// End:Custom test code for Mike's enforcer test.
+
 // Matt: custom handler to send IN/OUT status to NUS client.
 static void update_nus_client(char *data_array)
 {
@@ -246,7 +250,10 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 	uint16_t new_scan_interval;
 	uint16_t new_scan_window;
 	uint32_t cur_ticks;
-	
+
+	uint8_t rssi_val[4] = {0};
+	uint8_t rssi_len;
+			
 	memset(p_resp_str, 0, PSTORE_MAX_BLOCK + 1);
 	// Execute AT command.
 	switch (atcmd_parse(index, (char *)data_array)) {
@@ -327,6 +334,13 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 		case APP_ATCMD_ACT_LAST_SENTENCE :
 			memcpy(p_resp_str, atcmd_get_lastcmd(), strlen(atcmd_get_lastcmd()));
 			break;
+			
+// Custom test code for Mike's enforcer test.
+		case APP_ATCMD_ACT_RSSI_GET :
+			rssi_len = signed_byte_to_ascii(rssi_val, m_rx_rssi);
+			memcpy(p_resp_str, rssi_val, rssi_len);
+			break;
+// End:Custom test code for Mike's enforcer test.
 			
 		default :
 			memcpy(p_resp_str, atcmd_get_nack(), strlen(atcmd_get_nack()));
@@ -449,6 +463,10 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 		sscan_set_last_timestamp(device_idx);
 		return true;
 	}	
+
+	// Custom test code for Mike's enforcer test.
+    return true;
+    // End:Custom test code for Mike's enforcer test.
 
     counter_tick = p_data[25] + (p_data[26] << 8) + (p_data[27] << 16) + (p_data[28] << 24);
 	
@@ -596,6 +614,10 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 				//APP_ERROR_CHECK(err_code);
 				//err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
 				//APP_ERROR_CHECK(err_code);
+				
+				// Custom test code for Mike's enforcer test.
+				m_rx_rssi = p_adv_report->rssi;
+                // End:Custom test code for Mike's enforcer test.				
 				break;
 
                 err_code = sd_ble_gap_connect(&p_adv_report->peer_addr,
@@ -1186,9 +1208,12 @@ int main(void)
     // Start scanning for peripherals and initiate connection
     // with devices that advertise NUS UUID.
 	// Activate scan with data from pStorage.
-	if (config_hdlr_get_byte("sc01", &bytedata))
-		if (bytedata)
+	
+// Custom test code for Mike's enforcer test.
+	//if (config_hdlr_get_byte("sc01", &bytedata))
+		//if (bytedata)
 			scan_start();
+// End:Custom test code for Mike's enforcer test.
 
 	if (!config_hdlr_get_string("vers", &param_size, verstr))
 	{

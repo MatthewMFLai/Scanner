@@ -34,7 +34,8 @@ static const char * m_atcmds[] = {
 	"at$cfggetv?",
 	"at$cfgupd",
 	"at$curts?",
-	"at$lastsen?"
+	"at$lastsen?",
+	"at$rssiget?"
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
@@ -308,6 +309,7 @@ static bool atcmd_extract_cmd(uint16_t buffer_len, char *p_data)
 		case APP_ATCMD_ACT_CONFIG_UPD :
 		case APP_ATCMD_ACT_CURRENT_TS :
 		case APP_ATCMD_ACT_LAST_SENTENCE :
+		case APP_ATCMD_ACT_RSSI_GET :
 			break;
 			
 		default :
@@ -368,6 +370,10 @@ static uint8_t atcmd_run_cmd()
 			
 		case APP_ATCMD_ACT_LAST_SENTENCE :
 			rc = APP_ATCMD_ACT_LAST_SENTENCE;
+			break;
+
+		case APP_ATCMD_ACT_RSSI_GET :
+			rc = APP_ATCMD_ACT_RSSI_GET;
 			break;
 			
 		default :

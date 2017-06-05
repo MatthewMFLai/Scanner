@@ -30,6 +30,9 @@
 
 #include "util.h"
 
+static uint8_t m_lookup[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                             'A', 'B', 'C', 'D', 'E', 'F'};
+					 
 uint8_t byte_to_ascii (uint8_t *p_dest, uint8_t value)
 {
     uint8_t quotient;
@@ -42,6 +45,51 @@ uint8_t byte_to_ascii (uint8_t *p_dest, uint8_t value)
 		*p_dest = ZERO;
 		return (1);
 	}
+	
+    for (uint8_t i = 0; i < CONFIG_BYTE_DIGITS_MAX; i++)
+    {
+		quotient = value / divisor;
+		value = value % divisor;
+		if (check_leading_zero)
+		{
+			if (quotient)
+			{
+				*p_dest++ = quotient + ZERO;
+				rc++;
+				check_leading_zero = false;
+			}
+		}
+		else
+		{
+			*p_dest++ = quotient + ZERO;
+			rc++;
+		}			
+		divisor = divisor / DIVISOR;
+    }
+    return (rc);
+}
+
+uint8_t signed_byte_to_ascii (uint8_t *p_dest, int8_t signed_value)
+{
+	uint8_t value;
+    uint8_t quotient;
+    uint8_t rc = 0;
+	uint8_t divisor = DIVISOR_BYTE;
+	bool check_leading_zero = true;
+	
+	if (!signed_value)
+	{
+		*p_dest = ZERO;
+		return (1);
+	}
+	
+	if (signed_value < 0)
+	{
+		*p_dest++ = MINUS;
+		signed_value *= -1;
+		rc++;
+	}
+	value = (uint8_t)signed_value;
 	
     for (uint8_t i = 0; i < CONFIG_BYTE_DIGITS_MAX; i++)
     {
@@ -214,4 +262,20 @@ void big_to_small_endian(uint8_t *p_data, uint8_t len)
 		*(p_data + i) = *(p_data + len - i - 1);
 		*(p_data + len - i - 1) = val;
 	}
+}
+
+void byte_to_hex(char *p_msnibble, char *p_lsnibble, uint8_t value)
+{
+    *p_msnibble = m_lookup[value >> 4];
+    *p_lsnibble = m_lookup[(value & 0x0f)];	
+}
+
+uint8_t calc_checksum(uint8_t *s)
+{
+	uint8_t result = 0;
+	s++; // Skip dollar signal 
+	while ((*s != '*') && (*s != '\0'))
+		result ^= *s++;
+	
+	return (result);
 }
