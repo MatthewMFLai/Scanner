@@ -35,7 +35,7 @@ static const char * m_atcmds[] = {
 	"at$cfgupd",
 	"at$curts?",
 	"at$lastsen?",
-	"at$rssiget?"
+	"at$rssi?"
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status

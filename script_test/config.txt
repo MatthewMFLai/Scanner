@@ -4,7 +4,7 @@ vers=v1.0.4
 # Scanner config parameters
 
 # scanner enable (1) or disable (0)
-sc01=0
+sc01=1
 
 # scanner working mode
 sc02=0
@@ -19,7 +19,7 @@ sc04=80
 
 # beacon 1 related parameters
 # 6-byte device id
-b101=d2b547436202
+b101=e287a91dee61
 # 16-byte UUID
 b102=0112233445566778899aabbccddeeff0
 # enable scan (1) or disable scan (0)
@@ -41,7 +41,7 @@ b201=c68b7d3723fe
 # 16-byte UUID
 b202=0112233445566778899aabbccddeeff1
 # enable scan (1) or disable scan (0)
-b203=1
+b203=0
 # encryption suppport (1) or no encryption (0)
 b204=1
 # encryption key

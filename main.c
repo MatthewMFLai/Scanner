@@ -1210,8 +1210,8 @@ int main(void)
 	// Activate scan with data from pStorage.
 	
 // Custom test code for Mike's enforcer test.
-	//if (config_hdlr_get_byte("sc01", &bytedata))
-		//if (bytedata)
+	if (config_hdlr_get_byte("sc01", &bytedata))
+		if (bytedata)
 			scan_start();
 // End:Custom test code for Mike's enforcer test.
 
