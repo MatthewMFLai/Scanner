@@ -19,7 +19,7 @@ sc04=80
 
 # beacon 1 related parameters
 # 6-byte device id
-b101=e287a91dee61
+b101=c27cf4d67b73
 # 16-byte UUID
 b102=0112233445566778899aabbccddeeff0
 # enable scan (1) or disable scan (0)
