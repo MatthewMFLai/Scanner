@@ -55,6 +55,7 @@ $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
 $(abspath ../../../../../../components/drivers_nrf/saadc/nrf_drv_saadc.c) \
 $(abspath ../../../../../../components/drivers_nrf/hal/nrf_saadc.c) \
 $(abspath ../../../ringbuff.c) \
+$(abspath ../../../rssi_filter.c) \
 $(abspath ../../../gsm_comm.c) \
 $(abspath ../../../gsm_msg.c) \
 $(abspath ../../../gsm_msg_if.c) \
