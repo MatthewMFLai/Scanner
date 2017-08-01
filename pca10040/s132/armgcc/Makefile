@@ -52,14 +52,22 @@ $(abspath ../../../../../../components/drivers_nrf/common/nrf_drv_common.c) \
 $(abspath ../../../../../../components/drivers_nrf/gpiote/nrf_drv_gpiote.c) \
 $(abspath ../../../../../../components/drivers_nrf/uart/nrf_drv_uart.c) \
 $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
-$(abspath ../../../timestamp.c) \
-$(abspath ../../../uart_reply.c) \
-$(abspath ../../../util.c) \
+$(abspath ../../../../../../components/drivers_nrf/saadc/nrf_drv_saadc.c) \
+$(abspath ../../../../../../components/drivers_nrf/hal/nrf_saadc.c) \
+$(abspath ../../../ringbuff.c) \
+$(abspath ../../../gsm_comm.c) \
+$(abspath ../../../gsm_msg.c) \
+$(abspath ../../../gsm_msg_if.c) \
+$(abspath ../../../gsm_msg_tx.c) \
 $(abspath ../../../pstore.c) \
 $(abspath ../../../config_hdlr.c) \
 $(abspath ../../../atcmd.c) \
 $(abspath ../../../secure_scan.c) \
 $(abspath ../../../main.c) \
+$(abspath ../../../../../../../app_common/timestamp.c) \
+$(abspath ../../../../../../../app_common/uart_reply.c) \
+$(abspath ../../../../../../../app_common/util.c) \
+$(abspath ../../../../../../../app_common/msg_process.c) \
 $(abspath ../../../../../../components/ble/common/ble_advdata.c) \
 $(abspath ../../../../../../components/ble/common/ble_conn_params.c) \
 $(abspath ../../../../../../components/ble/ble_db_discovery/ble_db_discovery.c) \
@@ -80,6 +88,7 @@ ASM_SOURCE_FILES  = $(abspath ../../../../../../components/toolchain/gcc/gcc_sta
 #includes common to all targets
 INC_PATHS  = -I$(abspath ../../../config/ble_app_uart_c_s132_pca10040)
 INC_PATHS += -I$(abspath ../../../config)
+INC_PATHS += -I$(abspath ../../../../../../../app_common)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/config)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/fifo)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/delay)
@@ -87,6 +96,7 @@ INC_PATHS += -I$(abspath ../../../../../../components/libraries/fstorage/config)
 INC_PATHS += -I$(abspath ../../../../../../components/softdevice/s132/headers/nrf52)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/util)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/uart)
+INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/saadc)
 INC_PATHS += -I$(abspath ../../../../../../components/ble/common)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/uart)
 INC_PATHS += -I$(abspath ../../../../../../components/device)
@@ -143,7 +153,7 @@ CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DBSP_UART_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
-CFLAGS += -Wall -Werror -O3 -g3
+#CFLAGS += -Wall -Werror -O3 -g3
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 #CFLAGS += -DNRF_LOG_USES_UART=1
 # keep every function in separate section. This will allow linker to dump unused functions

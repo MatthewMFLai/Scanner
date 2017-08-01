@@ -36,6 +36,9 @@
 #include "pstore.h"
 #include "config_hdlr.h"
 
+#include "gsm_comm.h"
+#include "gsm_msg_if.h"
+
 #define CENTRAL_LINK_COUNT      1                               /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 //#define PERIPHERAL_LINK_COUNT   0                               /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
@@ -1199,6 +1202,9 @@ int main(void)
 	
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
+
+	gsm_comm_init();
+	gsm_comm_poweron();
 	
     for (;;)
     {
