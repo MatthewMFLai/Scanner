@@ -471,6 +471,18 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 	//SEGGER_RTT_printf(0, "counter_tick: 0x%#08x\n", counter_tick);
 	if (sscan_decrypt_match_uuid(device_idx, p_data + 9, counter_tick))
 	{
+		SEGGER_RTT_printf(0, "device #: %d rssi: %d\n", device_idx, p_adv_report->rssi);
+		rssi_filter_update(device_idx, p_adv_report->rssi, 0);
+		if (geofence_hdlr_device_update() == GEOFENCE_HDLR_RC_FIRST_IN)
+		{
+			relay_fsm_process_rbc(geofence_in_msg, strlen(geofence_in_msg), 0);
+		}
+		else if (ts_marker_exceed(1, 30, TS_MARKER_SECOND))
+		{
+			// Use time marker to limit reporting.
+			relay_fsm_process_rbc("0 0 0", rssi_filter_report_best(), 0);
+			ts_marker_update(1);
+		}
 		sscan_set_last_msg(device_idx, p_data + 9);
 		sscan_set_last_timestamp(device_idx);
 		if (sscan_set_connected(device_idx) == RC_SSCAN_FIRST_CONNECT)
@@ -486,8 +498,8 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 			data_array[strlen(data_array)] = ' ';
 			strcpy(data_array + strlen(data_array), ts_str);
 
-			uart_reply_string(data_array);
-			uart_reply_byte('\n');			
+			//uart_reply_string(data_array);
+			//uart_reply_byte('\n');			
 			update_nus_client(data_array);
 			
 			atcmd_set_lastcmd(data_array);
@@ -874,6 +886,7 @@ static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t lengt
 	if (m_ble_data_src[length-1] != '\r')
 		return;
 	
+	SEGGER_RTT_printf(0, "%s", m_ble_data_src);
 	execute_atcmd(length, m_ble_data_src, m_atcmd_resp_str);
 	err_code = ble_nus_string_send(&m_nus, (uint8_t *)m_atcmd_resp_str, strlen(m_atcmd_resp_str));
 	if (err_code != NRF_ERROR_INVALID_STATE)
@@ -1201,8 +1214,8 @@ int main(void)
     // Start scanning for peripherals and initiate connection
     // with devices that advertise NUS UUID.
 	// Activate scan with data from pStorage.
-	if (config_hdlr_get_byte("sc01", &bytedata))
-		if (bytedata)
+	//if (config_hdlr_get_byte("sc01", &bytedata))
+	//	if (bytedata)
 			scan_start();
 
 	if (!config_hdlr_get_string("vers", &param_size, verstr))

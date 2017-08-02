@@ -19,7 +19,7 @@ sc04=80
 
 # beacon 1 related parameters
 # 6-byte device id
-b101=d2b547436202
+b101=d427f28f768c
 # 16-byte UUID
 b102=0112233445566778899aabbccddeeff0
 # enable scan (1) or disable scan (0)
@@ -37,7 +37,7 @@ b108=5000
 
 # beacon 2 related parameters
 # 6-byte device id
-b201=c68b7d3723fe
+b201=c46d833efd38
 # 16-byte UUID
 b202=0112233445566778899aabbccddeeff1
 # enable scan (1) or disable scan (0)
@@ -55,7 +55,7 @@ b208=5000
 
 # beacon 3 related parameters
 # 6-byte device id
-b301=f3e30a6e5dd6
+b301=c5a826c97953
 # 16-byte UUID
 b302=00000000000000000000000000000000
 # enable scan (1) or disable scan (0)
@@ -73,7 +73,7 @@ b308=5000
 
 # beacon 4 related parameters
 # 6-byte device id
-b401=faee97afd35a
+b401=d72734a4d59c
 # 16-byte UUID
 b402=00000000000000000000000000000000
 # enable scan (1) or disable scan (0)
