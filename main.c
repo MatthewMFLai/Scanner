@@ -38,6 +38,10 @@
 
 #include "gsm_comm.h"
 #include "gsm_msg_if.h"
+#include "relay_fsm.h"
+#include "msg_process.h"
+#include "rssi_filter.h"
+#include "geofence_hdlr.h"
 
 #define CENTRAL_LINK_COUNT      1                               /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 //#define PERIPHERAL_LINK_COUNT   0                               /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
@@ -180,6 +184,9 @@ static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;
 
 static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
 // From the NUS peripheral main module
+
+static char geofence_in_msg[] = "STATUS_CODE,X,";
+static char geofence_out_msg[] = "STATUS_CODE,4,";
 
 // Matt: custom handler to send IN/OUT status to NUS client.
 static void update_nus_client(char *data_array)
@@ -354,9 +361,10 @@ void uart_event_handle(app_uart_evt_t * p_event)
         /**@snippet [Handling data from UART] */ 
         case APP_UART_DATA_READY:
             UNUSED_VARIABLE(app_uart_get(&data_array[index]));
+			SEGGER_RTT_printf(0, "%c", data_array[index]);
             index++;
 
-            if ((data_array[index - 1] == '\r') ||
+            if ((data_array[index - 1] == '\n') ||
 				(index >= (APP_ATCMD_MAX_DATA_LEN)))
 				//(index >= (BLE_NUS_MAX_DATA_LEN)))
             {
@@ -366,9 +374,10 @@ void uart_event_handle(app_uart_evt_t * p_event)
                 }*/
 				
 				// Execute AT command.
-				execute_atcmd(index, data_array, m_atcmd_resp_str);
-				m_atcmd_resp_str[strlen(m_atcmd_resp_str)] = '\n';
-				uart_reply_string(m_atcmd_resp_str);
+				//execute_atcmd(index, data_array, m_atcmd_resp_str);
+				//m_atcmd_resp_str[strlen(m_atcmd_resp_str)] = '\n';
+				//uart_reply_string(m_atcmd_resp_str);
+				gsm_comm_fsm_run(data_array, index);
                 index = 0;
             }
             break;
@@ -735,7 +744,7 @@ static void uart_init(void)
         .cts_pin_no   = CTS_PIN_NUMBER,
         .flow_control = APP_UART_FLOW_CONTROL_DISABLED,
         .use_parity   = false,
-        .baud_rate    = UART_BAUDRATE_BAUDRATE_Baud57600
+        .baud_rate    = UART_BAUDRATE_BAUDRATE_Baud115200
       };
 
     APP_UART_FIFO_INIT(&comm_params,
@@ -803,6 +812,9 @@ static void timer_timeout_handler (void *p_context)
 	}
 	app_timer_cnt_get(&cur_ticks);
 	ts_check_and_set(cur_ticks);
+	ts_timer_run(cur_ticks);
+	if (geofence_hdlr_timer_update() == GEOFENCE_HDLR_RC_FIRST_OUT)
+	    relay_fsm_process_rbc(geofence_out_msg, strlen(geofence_out_msg), 0);
 }
 
 
@@ -1197,14 +1209,21 @@ int main(void)
 	{
 		strcpy(verstr, "NUL");
 	}
-	uart_reply_string(verstr);
-	uart_reply_byte('\n');
+	SEGGER_RTT_printf(0, "%s", verstr);
+
+	ts_timer_init(TIMER_CHECK_INTERVAL);
+	ts_timer_register(TIMER_RELAY_MSG_FSM, relay_fsm_reset);
+	ts_timer_register(TIMER_GSM_MSG_IF_FSM, gsm_msg_if_reset);
 	
     err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
 
 	gsm_comm_init();
 	gsm_comm_poweron();
+	relay_fsm_init();
+	ts_marker_init();
+	rssi_filter_init();
+	geofence_hdlr_init();
 	
     for (;;)
     {

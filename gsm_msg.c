@@ -46,6 +46,9 @@ static char m_handshake2[] = "$EAVSYS,80006444,89302720399930508089,14167799583,
 static char m_handshake3[] = "$ECHK,80006444,0";
 static char m_req_sys_info[] = "$AVREQ,?";
 static char m_req_loc_info[] = "$AVREQ,00000000,1";
+static char m_geofence_config[] = "$LPCFG,00000000";
+static char m_geofence_delete[] = "$EAVGOF,00000000";
+static char m_geofence_ack[] = "$AVCFG,00000000";
 static char m_ack[] = "$EAVACK";
 static char m_scratchpad[GSM_MSG_BUFF_SIZE];
 
@@ -92,6 +95,18 @@ void gsm_msg_receive(gsm_msg_t *p_msg)
 		relay_fsm_process_gsm(p_data, len);
     }
 	else if (!memcmp(m_ack, p_data, strlen(m_ack)))
+	{
+		relay_fsm_process_gsm(p_data, len);
+    }
+	else if (!memcmp(m_geofence_config, p_data, strlen(m_geofence_config)))
+	{
+		relay_fsm_process_gsm(p_data, len);
+    }
+	else if (!memcmp(m_geofence_delete, p_data, strlen(m_geofence_delete)))
+	{
+		relay_fsm_process_gsm(p_data, len);
+    }
+	else if (!memcmp(m_geofence_ack, p_data, strlen(m_geofence_ack)))
 	{
 		relay_fsm_process_gsm(p_data, len);
     }

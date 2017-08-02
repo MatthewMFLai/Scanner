@@ -31,11 +31,7 @@
 #include "relay_fsm.h"
 #include "gsm_comm.h"
 #include "gsm_msg_tx.h"
-#include "app_msg_tx_hdlr.h"
-#include "app_msg_hdlr.h"
-#include "app_msg_encrypt.h"
 #include "msg_process.h"
-#include "db_access.h"
 #include "timestamp.h"
 #include "geofence_hdlr.h"
 #include "rssi_filter.h"
@@ -45,6 +41,7 @@ static uint8_t m_relay_fsm_state;
 static char m_req_loc_info[] = "$AVREQ,00000000,1";
 static char m_geofence_config[] = "$LPCFG,00000000";
 static char m_geofence_delete[] = "$EAVGOF,00000000";
+static char m_locatorid[] = "80006444";
 
 void relay_fsm_init(void)
 {
@@ -81,7 +78,7 @@ uint8_t relay_fsm_process_rbc(uint8_t *s, uint16_t len, uint16_t node_id)
 						
 				// Kludge: set to default device node id 0.
                 //gsm_msg_status_update(status_code[0], db_access_get_locatorid_with_nodeid(0));
-				gsm_msg_multi_position_update(db_access_get_locatorid_with_nodeid(0),
+				gsm_msg_multi_position_update(m_locatorid,
 				                              rssi_filter_report_best(), status_code[0]);
                 if (status_code[0] == '4' ||
 				    status_code[0] == 'X')				
@@ -90,34 +87,10 @@ uint8_t relay_fsm_process_rbc(uint8_t *s, uint16_t len, uint16_t node_id)
 				    m_relay_fsm_state = RELAY_FSM_STATE_WAIT_LN_RELAY_ACK;	
                 ts_timer_set(TIMER_RELAY_MSG_FSM, TIMER_GSM_TIMEOUT_SECONDS);				
 			}
-			else if (msg_process_is_type(p_desc, MSG_PING_RQST))
-			{
-				char msg_data[16] = {0};
-				uint16_t from_handle, to_handle;
-				char *p_msg_type_str = msg_process_get_type_str(MSG_PING_RESP);
-				msg_build_desc_t *p_build_desc = msg_process_pre_build(MSG_PING_RESP);
-
-				p_build_desc->field[MSG_FIELD_TYPE] = (void *)p_msg_type_str;
-				len = msg_process_build(msg_data, p_build_desc);
-				db_access_get_handles(node_id, &from_handle, &to_handle);
-				app_msg_encrypt_key_set((uint8_t *)db_access_get_key_with_handle(from_handle));
-				// Encrypt message
-				len = app_msg_encrypt(len, (uint8_t *)msg_data,
-									  app_msg_encrypt_key_get(), MSG_ENCRYPT_COUNTER);					
-				app_msg_hdlr_send(from_handle, len, msg_data);
-			}
-			else if (msg_process_is_type(p_desc, MSG_SCAN_ACK))
-			{
-				SEGGER_RTT_printf(0, "scan ack node_id: %d\n", node_id);
-			}
-			else if (msg_process_is_type(p_desc, MSG_FLUSH))
-			{
-				SEGGER_RTT_printf(0, "flush node_id: %d\n", node_id);
-			}
 			else
 			{
 				// Kludge: set to default device node id 0.
-				gsm_msg_multi_position_update(db_access_get_locatorid_with_nodeid(0), len, GSM_MSG_STATUS_CODE_0);
+				gsm_msg_multi_position_update(m_locatorid, len, GSM_MSG_STATUS_CODE_0);
 				m_relay_fsm_state = RELAY_FSM_STATE_WAIT_LN_ACK;
 				ts_timer_set(TIMER_RELAY_MSG_FSM, TIMER_GSM_TIMEOUT_SECONDS);
 	        }
@@ -133,14 +106,6 @@ uint8_t relay_fsm_process_rbc(uint8_t *s, uint16_t len, uint16_t node_id)
 			
         case RELAY_FSM_STATE_WAIT_MESH_RELAY_ACK:
 		    SEGGER_RTT_printf(0, "relay_fsm_process_rbc RELAY_FSM_STATE_WAIT_MESH_RELAY_ACK\n");
-		    p_desc = msg_process_parse (s, len, MSG_FIELD_TYPE);
-			if (msg_process_is_type(p_desc, MSG_PING_RESP))
-			{
-			    gsm_msg_multi_position_update(db_access_get_locatorid_with_nodeid(node_id),
-				                              rssi_filter_report_best(), GSM_MSG_STATUS_CODE_0);	
-			    m_relay_fsm_state = RELAY_FSM_STATE_WAIT_LN_ACK;
-				ts_timer_set(TIMER_RELAY_MSG_FSM, TIMER_GSM_TIMEOUT_SECONDS);
-			}
             break;
 			
         case RELAY_FSM_STATE_WAIT_MESH_ACK:
@@ -157,64 +122,24 @@ uint8_t relay_fsm_process_gsm(uint8_t *s, uint16_t len)
 	switch (m_relay_fsm_state) {
         case RELAY_FSM_STATE_READY:
 		    SEGGER_RTT_printf(0, "relay_fsm_process_gsm RELAY_FSM_STATE_READY\n");
-			if (!memcmp(m_req_loc_info, s, strlen(m_req_loc_info)))
-			{
-				char msg_data[16] = {0};
-				char *p_msg_type_str = msg_process_get_type_str(MSG_PING_RQST);
-				msg_build_desc_t *p_build_desc = msg_process_pre_build(MSG_PING_RQST);
-
-				p_build_desc->field[MSG_FIELD_TYPE] = (void *)p_msg_type_str;
-				len = msg_process_build(msg_data, p_build_desc);
-
-                // Find out the from gateway to device handle for the default device.
-                p_deviceaddr = db_access_get_default_deviceaddr();
-				if (p_deviceaddr != NULL)
-				{
-					db_access_get(p_deviceaddr, &node_id, &from_handle, &to_handle);
-                    app_msg_encrypt_key_set((uint8_t *)db_access_get_key_with_handle(from_handle));
-					// Encrypt message
-					len = app_msg_encrypt(len, (uint8_t *)msg_data,
-										  app_msg_encrypt_key_get(), MSG_ENCRYPT_COUNTER);					
-					app_msg_hdlr_send(from_handle, len, msg_data);
-
-					m_relay_fsm_state = RELAY_FSM_STATE_WAIT_MESH_RELAY_ACK;
-					ts_timer_set(TIMER_RELAY_MSG_FSM, TIMER_TIMEOUT_SECONDS);
-				}
-			}
-			else if (!memcmp(m_geofence_config, s, strlen(m_geofence_config)))
+			if (!memcmp(m_geofence_config, s, strlen(m_geofence_config)))
 			{
 				// Just send the same message back with the locator id filled in.
 				// $LPCFG,00000000,AG00=1,GF00=3|GF00|4351.5575|-7923.1368|4351.4958|-7923.0107*02
-				memcpy(s + GSM_MSG_GEOFENCE_LOCATOR_MARKER, db_access_get_locatorid_with_nodeid(0),
-				       strlen(db_access_get_locatorid_with_nodeid(0)));
+				memcpy(s + GSM_MSG_GEOFENCE_LOCATOR_MARKER, m_locatorid,
+				       strlen(m_locatorid));
 				gsm_msg_raw_send(s, len);
 				geofence_hdlr_fence_set();
 			}
 			else if (!memcmp(m_geofence_delete, s, strlen(m_geofence_delete)))
 			{
-				gsm_msg_geofence_delete_ack(db_access_get_locatorid_with_nodeid(0));
+				gsm_msg_geofence_delete_ack((uint8_t *)m_locatorid);
 				geofence_hdlr_fence_clr();
 			}
 		    break;
 			
         case RELAY_FSM_STATE_WAIT_LN_RELAY_ACK:
 		    SEGGER_RTT_printf(0, "relay_fsm_process_gsm RELAY_FSM_STATE_WAIT_LN_RELAY_ACK\n");
-		    // Send ack back to device.
-			
-			// Find out the from gateway to device handle for the default device.
-			p_deviceaddr = db_access_get_default_deviceaddr();
-			if (p_deviceaddr != NULL)
-			{
-				db_access_get(p_deviceaddr, &node_id, &from_handle, &to_handle);
-                app_msg_encrypt_key_set((uint8_t *)db_access_get_key_with_handle(from_handle));
-				// Encrypt message
-				len = app_msg_encrypt(len, (uint8_t *)s,
-									  app_msg_encrypt_key_get(), MSG_ENCRYPT_COUNTER);				
-				app_msg_hdlr_send(from_handle, len, s);
-
-				m_relay_fsm_state = RELAY_FSM_STATE_READY;
-				ts_timer_clear(TIMER_RELAY_MSG_FSM);
-			}
             break;
 			
         case RELAY_FSM_STATE_WAIT_LN_ACK:
