@@ -460,7 +460,7 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 	{
 		sscan_set_last_timestamp(device_idx);
 		return true;
-	}	
+	}
 
     counter_tick = p_data[25] + (p_data[26] << 8) + (p_data[27] << 16) + (p_data[28] << 24);
 	
@@ -1189,19 +1189,23 @@ int main(void)
 	sscan_enable_beacon(1);
 	
 	sscan_set_device_id(2, trackr.addr);
-	sscan_set_device_uuid(2, m_beacon_uuid);
-	sscan_set_encryption_key(2, m_aes128_key);
+	if (config_hdlr_get_bcd("b302", &param_size, (char *)m_beacon_uuid))
+	    sscan_set_device_uuid(2, m_beacon_uuid);
+	if (config_hdlr_get_bcd("b305", &param_size, (char *)m_aes128_key))
+	    sscan_set_encryption_key(2, m_aes128_key);
 	if (config_hdlr_get_longword("b308", &longdata))
 		sscan_set_timeout_window(2, longdata);
-	sscan_disable_decryption(2);
+	sscan_enable_decryption(2);
 	sscan_enable_beacon(2);
 	
 	sscan_set_device_id(3, trackr2.addr);
-	sscan_set_device_uuid(3, m_beacon_uuid);
-	sscan_set_encryption_key(3, m_aes128_key);
+	if (config_hdlr_get_bcd("b402", &param_size, (char *)m_beacon2_uuid))
+        sscan_set_device_uuid(3, m_beacon2_uuid);
+	if (config_hdlr_get_bcd("b405", &param_size, (char *)m_aes128_key2))
+	    sscan_set_encryption_key(3, m_aes128_key2);
 	if (config_hdlr_get_longword("b408", &longdata))
 		sscan_set_timeout_window(3, longdata);
-	sscan_disable_decryption(3);
+	sscan_enable_decryption(3);
 	sscan_enable_beacon(3);
 	
     //err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_SINGLE_SHOT, timer_timeout_handler);

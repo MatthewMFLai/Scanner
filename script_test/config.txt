@@ -57,13 +57,13 @@ b208=5000
 # 6-byte device id
 b301=c5a826c97953
 # 16-byte UUID
-b302=00000000000000000000000000000000
+b302=112233445566778899aabbccddeeff10
 # enable scan (1) or disable scan (0)
-b303=0
+b303=1
 # encryption suppport (1) or no encryption (0)
-b304=0
+b304=1
 # encryption key
-b305=00000000000000000000000000000000
+b305=f112233445566778899aabbccddeef41
 # advertise interval
 b306=80
 # Transmit power (dBm)
@@ -75,13 +75,13 @@ b308=5000
 # 6-byte device id
 b401=d72734a4d59c
 # 16-byte UUID
-b402=00000000000000000000000000000000
+b402=112233445566778899aabbccddeeff11
 # enable scan (1) or disable scan (0)
-b403=0
+b403=1
 # encryption suppport (1) or no encryption (0)
-b404=0
+b404=1
 # encryption key
-b405=00000000000000000000000000000000
+b405=f112233445566778899aabbccddeef51
 # advertise interval
 b406=80
 # Transmit power (dBm)
