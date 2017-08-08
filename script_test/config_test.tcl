@@ -70,6 +70,41 @@ proc config_parse {filename} {
 	return
  }
 
+  proc config_send_no_flowctrl {fd filename} {
+	set configbody [config_parse $filename]
+	if {$configbody == ""} {
+		puts "config file empty"
+		return
+	}
+	# Extract version from config file content
+	set searchstr "vers="
+	set idx [string first $searchstr $configbody]
+	if {$idx == -1} {
+		puts "Version data not found!"
+		return
+	}
+	incr idx [string length $searchstr]
+	set idx2 [string first "\n" $configbody $idx]
+	incr idx2 -1
+	set version [string range $configbody $idx $idx2]
+	
+	set data "at\$cfgset $version [string length $configbody] $configbody"
+	append data "\r"
+	set i 0
+	set len [string length $data]
+	while {$i < $len} {
+	    if {[expr $i + 20] < $len} {
+	        puts -nonewline $fd [string range $data $i [expr $i + 20 - 1]]
+		} else {
+		    puts -nonewline $fd [string range $data $i end]
+		}
+			
+		incr i 20
+		after 500
+	}	
+	return
+ }
+ 
  proc at_send {fd data} {
      set cmd "at\$"
 	 append cmd $data
