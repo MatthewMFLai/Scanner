@@ -33,6 +33,7 @@ gsm_msg_t *gsm_msg_if_receive(uint8_t *p_data, uint16_t len);
 // but not the \0 after the very last message.
 // Return: 0 message sent, 1 message not sent, busy
 uint8_t gsm_msg_if_send(uint8_t *p_data, uint16_t len);
+uint8_t gsm_msg_if_send_no_ack(uint8_t *p_data, uint16_t len);
 uint8_t gsm_msg_if_reply(uint8_t *p_data, uint16_t len);
 uint8_t gsm_msg_if_get_state(void);
 void gsm_msg_if_reset(void);

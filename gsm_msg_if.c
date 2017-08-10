@@ -185,6 +185,78 @@ uint8_t gsm_msg_if_send(uint8_t *p_data, uint16_t len)
     return (rc);	
 }
 
+// Support sending mulitple messages in one call. The separator must be
+// the \0 byte.
+// eg.  <msg>
+//      <msg>\0<msg>\0<msg>
+// The len parameter must exclude the in between \0 terminator bytes,
+// but not the \0 after the very last message.
+uint8_t gsm_msg_if_send_no_ack(uint8_t *p_data, uint16_t len)
+{
+	char msgout[200];
+	char msnibble, lsnibble;
+	char star, suffix1, suffix2;
+	uint8_t checksum, rc;
+	uint16_t i = 0;
+	uint16_t j = 0;
+	uint16_t idx;
+	
+	rc = 1;
+	star = GSM_MSG_IF_STAR;
+	suffix1 = GSM_MSG_IF_SUFFIX1;
+	suffix2 = GSM_MSG_IF_SUFFIX2;
+	
+    switch (m_gsm_msg_if_state)
+    {
+		case GSM_MSG_IF_STATE_READY:
+            while (j <= len)
+			{
+				if (p_data[j] != GSM_MSG_IF_SEPARATOR)
+					{
+						j++;
+						continue;
+					}
+				// message in the range p_data[i] to p_data[j-1]
+				checksum = calc_checksum(p_data + i);
+				
+				// Convert checksum to hex bytes.
+				byte_to_hex(&msnibble, &lsnibble, checksum);
+				
+				// Send message to Telit module.
+				uart_reply_string2(p_data + i, j - i);
+				
+				memcpy(msgout, p_data + i, j - i);
+				msgout[j - i] = '\0';
+				SEGGER_RTT_printf(0, "sent: %s", msgout);
+				
+				uart_reply_byte(star);
+				SEGGER_RTT_printf(0, "%c", star);
+
+				uart_reply_byte(msnibble);
+				SEGGER_RTT_printf(0, "%c", msnibble);
+
+				uart_reply_byte(lsnibble);
+				SEGGER_RTT_printf(0, "%c", lsnibble);
+
+				uart_reply_byte(suffix1);
+				SEGGER_RTT_printf(0, "%c", suffix1);
+
+				uart_reply_byte(suffix2);
+				SEGGER_RTT_printf(0, "%c", suffix2);
+				
+				j++;
+				i = j;
+			}
+
+			rc = 0;
+			
+            break;
+        default:
+            break;
+    }
+    return (rc);	
+}
+
 uint8_t gsm_msg_if_reply(uint8_t *p_data, uint16_t len)
 {
 	char msgout[200];

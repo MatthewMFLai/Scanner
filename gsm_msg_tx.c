@@ -214,6 +214,16 @@ void gsm_msg_raw_send(uint8_t *p_msg, uint16_t len)
 	gsm_msg_if_send(m_scratchpad, len);
 }
 
+void gsm_msg_raw_send_no_ack(uint8_t *p_msg, uint16_t len)
+{
+	char *p_data;
+	
+    memcpy(m_scratchpad, p_msg, len);
+    p_data = m_scratchpad + len;
+    *p_data++ = GSM_MSG_IF_SEPARATOR;
+	gsm_msg_if_send_no_ack(m_scratchpad, len);
+}
+
 void gsm_msg_geofence_delete_ack(uint8_t *p_locatorid)
 {
 	char *p_data;

@@ -483,6 +483,17 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 			relay_fsm_process_rbc("0 0 0", rssi_filter_report_best(), 0);
 			ts_marker_update(1);
 		}
+	    else
+		{
+			// Send raw rssi to floor server
+			char rssi_msg[] = "RSSI x    ";
+			uint8_t marker1 = 5;
+			uint8_t marker2 = 7;
+			
+            byte_to_ascii(&rssi_msg[marker1], device_idx);			
+		    signed_byte_to_ascii(&rssi_msg[marker2], p_adv_report->rssi);
+            relay_fsm_process_rbc(rssi_msg, strlen(rssi_msg), 9999);			
+		}
 		sscan_set_last_msg(device_idx, p_data + 9);
 		sscan_set_last_timestamp(device_idx);
 		if (sscan_set_connected(device_idx) == RC_SSCAN_FIRST_CONNECT)

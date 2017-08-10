@@ -89,10 +89,18 @@ uint8_t relay_fsm_process_rbc(uint8_t *s, uint16_t len, uint16_t node_id)
 			}
 			else
 			{
-				// Kludge: set to default device node id 0.
-				gsm_msg_multi_position_update(m_locatorid, len, GSM_MSG_STATUS_CODE_0);
-				m_relay_fsm_state = RELAY_FSM_STATE_WAIT_LN_ACK;
-				ts_timer_set(TIMER_RELAY_MSG_FSM, TIMER_GSM_TIMEOUT_SECONDS);
+				if (node_id == 9999)
+				{
+					// Send raw rssi data to floor server.
+					gsm_msg_raw_send_no_ack(s, len);
+				}
+				else
+				{
+					// Kludge: set to default device node id 0.
+					gsm_msg_multi_position_update(m_locatorid, len, GSM_MSG_STATUS_CODE_0);
+					m_relay_fsm_state = RELAY_FSM_STATE_WAIT_LN_ACK;
+					ts_timer_set(TIMER_RELAY_MSG_FSM, TIMER_GSM_TIMEOUT_SECONDS);
+				}
 	        }
 		    break;
 			
