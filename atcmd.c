@@ -20,6 +20,10 @@ static char m_def_building_code[] = "BUL001";
 static char m_configdata[PSTORE_MAX_BLOCK];
 static char m_last_sentence[APP_ATCMD_SENTENCE_LEN] = "NUL";
 
+static char m_last_str[APP_VERSION_STR_MAX];
+static uint8_t m_last_byte;
+static uint16_t m_last_word;
+
 static atcmd_data_t m_scanner;
 
 static const char * m_atcmds[] = {
@@ -34,7 +38,11 @@ static const char * m_atcmds[] = {
 	"at$cfggetv?",
 	"at$cfgupd",
 	"at$curts?",
-	"at$lastsen?"
+	"at$lastsen?",
+	"at$servset",
+	"at$servget?",
+	"at$rssi",
+	"at$rssi?"
 };
 
 static atcmd_param_desc_t m_scan[] = {{0, 1}};  // scan status
@@ -44,6 +52,9 @@ static atcmd_param_desc_t m_scanint[] = {{0, 2},   // scan interval
 static atcmd_param_desc_t m_configdat[] = {{1, 0},   // version string
 										   {0, 2},  // config data size
 										   {1, 0}};   // config data, no white space support
+static atcmd_param_desc_t m_remoteserv[] = {{1, 0},   // IP address
+										   {0, 2}};  // port number
+static atcmd_param_desc_t m_rssi[] = {{0, 1}};  // rssi send status
 										   
 static bool check_ascii_word (uint8_t *p_data, uint8_t len)
 {
@@ -309,6 +320,85 @@ static bool atcmd_extract_cmd(uint16_t buffer_len, char *p_data)
 		case APP_ATCMD_ACT_CURRENT_TS :
 		case APP_ATCMD_ACT_LAST_SENTENCE :
 			break;
+
+        case APP_ATCMD_ACT_SERVER_SET :
+			// Get the IP address
+			while (*(p_data + i) == m_space &&
+			       i < buffer_len)
+				i++;
+				
+			if (i == buffer_len)
+				return false;
+
+			j = i;
+			while (*(p_data + j) != m_space &&
+			       *(p_data + j) != m_cr
+				   )
+				j++;			
+
+			if (j == buffer_len)
+				return false;
+
+			if (m_remoteserv[0].is_str)
+			{
+				memcpy(m_last_str, p_data + i, j - i);
+			}
+			
+			// Get the next parameter, the port value
+			i = j;
+			while (*(p_data + i) == m_space &&
+			       i < buffer_len)
+				i++;
+				
+			if (i == buffer_len)
+				return false;
+
+			j = i;
+			while (*(p_data + j) != m_space &&
+			       *(p_data + j) != m_cr)
+				j++;			
+
+			if (j == buffer_len)
+				return false;
+
+			memcpy(worddata, p_data + i, j - i);
+			if (!check_ascii_word(worddata, j - i))
+				return false;
+			
+			if (!m_remoteserv[1].is_str)
+			{
+				// Convert ascii to data.
+				m_last_word = ascii_to_word(worddata, j - i);
+			}
+			
+			if (!m_last_word)
+				return false;
+				
+            break;
+
+        case APP_ATCMD_ACT_SERVER_GET :
+            break;
+			
+        case APP_ATCMD_ACT_SEND_RSSI :
+			// Get the next parameter, the single byte on/off status
+			while (*(p_data + i) == m_space &&
+			       i < buffer_len)
+				i++;
+				
+			if (i == buffer_len)
+				return false;
+	
+			bytedata = *(p_data + i);
+			if (!m_rssi[0].is_str)
+			{
+				// Convert ascii to data.
+				bytedata -= 0x30;
+				m_last_byte = bytedata;
+			}
+			break;
+
+        case APP_ATCMD_ACT_SEND_RSSI_GET :
+            break;		
 			
 		default :
 			break;
@@ -369,7 +459,22 @@ static uint8_t atcmd_run_cmd()
 		case APP_ATCMD_ACT_LAST_SENTENCE :
 			rc = APP_ATCMD_ACT_LAST_SENTENCE;
 			break;
+
+		case APP_ATCMD_ACT_SERVER_SET :
+		    rc = APP_ATCMD_ACT_SERVER_SET;
+            break;
 			
+        case APP_ATCMD_ACT_SERVER_GET :
+		    rc = APP_ATCMD_ACT_SERVER_GET;
+            break;
+
+        case APP_ATCMD_ACT_SEND_RSSI :
+			rc = APP_ATCMD_ACT_SEND_RSSI;
+			break;
+
+        case APP_ATCMD_ACT_SEND_RSSI_GET :
+		    rc = APP_ATCMD_ACT_SEND_RSSI_GET;
+            break;			
 		default :
 			break;
 	}
@@ -393,6 +498,9 @@ void atcmd_init(void)
 	memset(m_configdata, 0, PSTORE_MAX_BLOCK);
 	memset(m_scanner.version_str, 0, APP_VERSION_STR_MAX);
 	memset(m_scanner.config_size_str, 0, APP_WORD_STR_LEN);
+	memset(m_last_str, 0, APP_VERSION_STR_MAX);
+	m_last_byte = 0;
+	m_last_word = 0;
 }
 
 /**@brief Function to store the current at command in the at command table.
@@ -512,4 +620,19 @@ void atcmd_set_lastcmd(char *p_src)
 char *atcmd_get_lastcmd(void)
 {
 	return (m_last_sentence);
+}
+
+char *atcmd_get_laststr(void)
+{
+	return (m_last_str);
+}
+
+uint8_t atcmd_get_last_byte(void)
+{
+    return (m_last_byte);	
+}
+
+uint16_t atcmd_get_last_word(void)
+{
+    return (m_last_word);	
 }

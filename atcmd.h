@@ -19,6 +19,11 @@
 #define APP_ATCMD_ACT_CONFIG_UPD        9
 #define APP_ATCMD_ACT_CURRENT_TS       10
 #define APP_ATCMD_ACT_LAST_SENTENCE    11
+#define APP_ATCMD_ACT_LAST_SENTENCE    11
+#define APP_ATCMD_ACT_SERVER_SET       12
+#define APP_ATCMD_ACT_SERVER_GET       13
+#define APP_ATCMD_ACT_SEND_RSSI        14
+#define APP_ATCMD_ACT_SEND_RSSI_GET    15
 #define APP_ATCMD_NOT_SUPPORTED     0xff
 
 #define APP_BUILDING_CODE_LENGTH	0X10
@@ -65,4 +70,8 @@ char *atcmd_get_out(void);
 
 void atcmd_set_lastcmd(char *p_src);
 char *atcmd_get_lastcmd(void);
+
+char *atcmd_get_laststr(void);
+uint8_t atcmd_get_last_byte(void);
+uint16_t atcmd_get_last_word(void);
 #endif  /* _ ATCMD_H__ */

@@ -250,6 +250,8 @@ static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
 static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 {
 	uint8_t val_str_len;
+	uint8_t bytedata;
+	uint16_t str_len;
 	uint16_t param_size;
 	char datastr[16] = {0};
 	uint16_t config_size;
@@ -337,6 +339,33 @@ static void execute_atcmd(uint16_t index, uint8_t *data_array, char *p_resp_str)
 		case APP_ATCMD_ACT_LAST_SENTENCE :
 			memcpy(p_resp_str, atcmd_get_lastcmd(), strlen(atcmd_get_lastcmd()));
 			break;
+
+        case APP_ATCMD_ACT_SERVER_SET :
+		    config_hdlr_set_word("sc06", atcmd_get_last_word());
+			config_hdlr_set_string("sc05", strlen(atcmd_get_laststr()), atcmd_get_laststr());
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));			
+            break;
+
+        case APP_ATCMD_ACT_SERVER_GET :
+
+			config_hdlr_get_string("sc05", &str_len, p_resp_str);
+			*(p_resp_str + str_len) = ' ';
+			str_len++;
+			config_hdlr_get_word("sc06", &param_size);
+			word_to_ascii(p_resp_str + str_len, param_size);
+            	
+            break;
+
+        case APP_ATCMD_ACT_SEND_RSSI :
+		    config_hdlr_set_byte("sc07", atcmd_get_last_byte());
+			memcpy(p_resp_str, atcmd_get_ok(), strlen(atcmd_get_ok()));	
+			break;
+
+        case APP_ATCMD_ACT_SEND_RSSI_GET :
+			config_hdlr_get_byte("sc07", &bytedata);
+			byte_to_ascii(p_resp_str, bytedata);
+            	
+            break;
 			
 		default :
 			memcpy(p_resp_str, atcmd_get_nack(), strlen(atcmd_get_nack()));
