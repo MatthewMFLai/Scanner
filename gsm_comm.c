@@ -34,6 +34,8 @@
 #include "ringbuff.h"
 #include "uart_reply.h"
 #include "timestamp.h"
+#include "config_hdlr.h"
+#include "util.h"
 #include "nrf_gpio.h"
 #include "nrf_drv_saadc.h"
 #include "nrf_delay.h"
@@ -71,7 +73,9 @@ static char m_at[] = "AT";
 static char m_cgdcont[] = "AT+CGDCONT = 1,\"IP\",\"nmrx.ca.apn\",\"0.0.0.0\"";
 static char m_scfg[] = "AT#SCFG=1,1,1500,0,280,5";
 static char m_sgact[] = "AT#SGACT=1,1";
-static char m_sd[] = "AT#SD=1,0,17903,\"tcp.ngrok.io\"";
+static char m_sd[] = "AT#SD=1,0,                      ";
+static uint8_t m_sd_marker = 10;
+//static char m_sd[] = "AT#SD=1,0,10269,\"tcp.ngrok.io\"";
 //static char m_sd[] = "AT#SD=1,0,1688,\"laipgw1.com\"";
 static char m_csq[] = "AT+CSQ";
 static char m_cops[] = "AT+COPS?";
@@ -84,6 +88,23 @@ static char m_match_creg5[] = "+CREG: 5";
 static char m_match_ok[] = "OK";
 static char m_match_connect[] = "CONNECT";
 static char m_match_nitz[] = "#NITZ:";
+
+static void build_sd_cmd(void)
+{
+    char comma = ',';
+    char quote = '"';
+	uint16_t ip_strlen, len, port;
+
+	len = m_sd_marker;
+	config_hdlr_get_word("sc06", &port);
+	len += word_to_ascii(&m_sd[m_sd_marker], port);
+	m_sd[len++] = comma;
+	m_sd[len++] = quote; 
+    config_hdlr_get_string("sc05", &ip_strlen, &m_sd[len]);
+    len += ip_strlen;
+    m_sd[len++] = quote;
+    m_sd[len] = '\0';	
+}
 
 /**@brief Function for handling the ADC interrupt.
  *
@@ -179,6 +200,7 @@ void gsm_comm_fsm_start(void)
 	uart_reply_byte('\r');
 	SEGGER_RTT_printf(0, "%s", m_sgact);
     nrf_delay_ms(TELLIT_AT_GAP);
+	build_sd_cmd();
 	uart_reply_string(m_sd);
 	uart_reply_byte('\r');
 	SEGGER_RTT_printf(0, "%s", m_sd);
@@ -266,6 +288,7 @@ void gsm_comm_fsm_run(uint8_t *p_data, uint16_t len)
             {
 				if (!strncmp(m_match_ok, p_data, match_len))
 				{
+					build_sd_cmd();
 					uart_reply_string(m_sd);
 	                uart_reply_byte('\r');
 					SEGGER_RTT_printf(0, "%s", m_sd);
