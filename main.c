@@ -1265,8 +1265,8 @@ int main(void)
     // Start scanning for peripherals and initiate connection
     // with devices that advertise NUS UUID.
 	// Activate scan with data from pStorage.
-	//if (config_hdlr_get_byte("sc01", &bytedata))
-	//	if (bytedata)
+	if (config_hdlr_get_byte("sc01", &bytedata))
+		if (bytedata)
 			scan_start();
 
 	if (!config_hdlr_get_string("vers", &param_size, verstr))
