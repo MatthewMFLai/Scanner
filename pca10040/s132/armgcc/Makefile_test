@@ -55,6 +55,7 @@ $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
 $(abspath ../../../../../../components/drivers_nrf/saadc/nrf_drv_saadc.c) \
 $(abspath ../../../../../../components/drivers_nrf/hal/nrf_saadc.c) \
 $(abspath ../../../ringbuff.c) \
+$(abspath ../../../ringbuff_ut.c) \
 $(abspath ../../../rssi_filter.c) \
 $(abspath ../../../gsm_comm.c) \
 $(abspath ../../../gsm_msg.c) \
@@ -71,6 +72,7 @@ $(abspath ../../../../../../../app_common/timestamp.c) \
 $(abspath ../../../../../../../app_common/uart_reply.c) \
 $(abspath ../../../../../../../app_common/util.c) \
 $(abspath ../../../../../../../app_common/msg_process.c) \
+$(abspath ../../../../../../../app_common/utmgr.c) \
 $(abspath ../../../../../../components/ble/common/ble_advdata.c) \
 $(abspath ../../../../../../components/ble/common/ble_conn_params.c) \
 $(abspath ../../../../../../components/ble/ble_db_discovery/ble_db_discovery.c) \
