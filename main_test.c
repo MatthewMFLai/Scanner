@@ -44,6 +44,9 @@
 #include "rssi_filter.h"
 #include "geofence_hdlr.h"
 
+#include "utmgr.h"
+#include "ringbuff_ut.h"
+
 #define CENTRAL_LINK_COUNT      1                               /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 //#define PERIPHERAL_LINK_COUNT   0                               /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
@@ -77,14 +80,22 @@
 int main(void)
 {	
 	char c = 0;
+	char tc_1_arg[] = "10,20,test string 1,test string 2";
+	char tc_1_ret[64];
+	char tc_2_arg[] = "test string 3,test string 4,30,40";
+	char tc_2_ret[64];	
 	SEGGER_RTT_printf(0, "Hello World!\n");
+	
+	utmgr_register(rbf_get_module_desc());
 	for (;;)
 	{
 		c = SEGGER_RTT_WaitKey(); // will block until data is available
 		if(c == 'r'){
-			SEGGER_RTT_WriteString(0, "Resetting..\n");
-			nrf_delay_ms(1000);
-			sd_nvic_SystemReset();
+			SEGGER_RTT_printf(0, "Received %c\n", c);
+			utmgr_exec_tc("rbf001", tc_1_arg, tc_1_ret);
+			SEGGER_RTT_printf(0, "Result test 1: %s\n", tc_1_ret);
+            utmgr_exec_tc("rbf002", tc_2_arg, tc_2_ret);
+			SEGGER_RTT_printf(0, "Result test 2: %s\n", tc_2_ret);
 		}
 		//power_manage();
 	}
