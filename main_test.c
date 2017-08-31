@@ -76,27 +76,56 @@
 #define UUID16_SIZE             2                               /**< Size of 16 bit UUID */
 #define UUID32_SIZE             4                               /**< Size of 32 bit UUID */
 #define UUID128_SIZE            16                              /**< Size of 128 bit UUID */									
-									
+	
+#define COMMA                   ','
+#define LIMITER                 ';'
+#define TERM0                   '\0'
+	
 int main(void)
 {	
-	char c = 0;
-	char tc_1_arg[] = "10,20,test string 1,test string 2";
-	char tc_1_ret[64];
-	char tc_2_arg[] = "test string 3,test string 4,30,40";
-	char tc_2_ret[64];	
+    uint8_t i, idx = 0;
+	char c;
+	char inbuf[128];
+	char tc_id[8];
+	char tc_arg[64];
+	char tc_ret[64];
+	SEGGER_RTT_Init();
 	SEGGER_RTT_printf(0, "Hello World!\n");
 	
 	utmgr_register(rbf_get_module_desc());
 	for (;;)
 	{
 		c = SEGGER_RTT_WaitKey(); // will block until data is available
-		if(c == 'r'){
-			SEGGER_RTT_printf(0, "Received %c\n", c);
-			utmgr_exec_tc("rbf001", tc_1_arg, tc_1_ret);
-			SEGGER_RTT_printf(0, "Result test 1: %s\n", tc_1_ret);
-            utmgr_exec_tc("rbf002", tc_2_arg, tc_2_ret);
-			SEGGER_RTT_printf(0, "Result test 2: %s\n", tc_2_ret);
+		if(c == LIMITER)
+		{
+			// input buffer should look like
+			// rbf001,10,20,test string 1,test string 2
+			
+			// Look for the first ","
+			for (i = 0; i < idx; i++)
+				if (inbuf[i] == COMMA)
+					break;
+				
+			if (i == idx)
+			{
+				// reset idx
+				idx = 0;
+				continue;
+			}
+			memcpy(tc_id, inbuf, i);
+			tc_id[i] = TERM0;
+			i++;
+			memcpy(tc_arg, &inbuf[i], idx - i);
+			tc_arg[idx - i] = TERM0;
+			SEGGER_RTT_printf(0, "tc id: %s arg: %s\n", tc_id, tc_arg);
+			utmgr_exec_tc(tc_id, tc_arg, tc_ret);
+			SEGGER_RTT_printf(0, "Result: %s\n", tc_ret);
+			
+			// reset buffer index
+			idx = 0;
 		}
+		else
+			inbuf[idx++] = c;
 		//power_manage();
 	}
 }
