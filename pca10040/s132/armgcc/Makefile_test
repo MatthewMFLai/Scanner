@@ -55,7 +55,6 @@ $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
 $(abspath ../../../../../../components/drivers_nrf/saadc/nrf_drv_saadc.c) \
 $(abspath ../../../../../../components/drivers_nrf/hal/nrf_saadc.c) \
 $(abspath ../../../ringbuff.c) \
-$(abspath ../../../ringbuff_ut.c) \
 $(abspath ../../../rssi_filter.c) \
 $(abspath ../../../gsm_comm.c) \
 $(abspath ../../../gsm_msg.c) \
@@ -156,6 +155,7 @@ CFLAGS += -DNRF52_PAN_64
 CFLAGS += -DNRF52_PAN_62
 CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DBSP_UART_SUPPORT
+CFLAGS += -DUT_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
 #CFLAGS += -Wall -Werror -O3 -g3

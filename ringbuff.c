@@ -145,3 +145,7 @@ bool rbuff_is_empty(rbuff_t* p_rbuff)
 {
     return RBUFF_IS_EMPTY(p_rbuff);
 }
+
+#ifdef UT_SUPPORT
+#include "ringbuff_ut.c"
+#endif

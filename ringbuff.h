@@ -53,4 +53,10 @@ uint32_t rbuff_get_len(rbuff_t* p_rbuff);
 bool rbuff_is_full(rbuff_t* p_rbuff);
 bool rbuff_is_empty(rbuff_t* p_rbuff);
 
+#ifdef UT_SUPPORT
+#include "utmgr.h"
+#include "SEGGER_RTT.h"
+utmgr_module_desc_t *rbf_get_module_desc(void);
+#endif
+
 #endif /* _RBUFF_H_ */
